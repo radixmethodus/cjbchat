@@ -71,25 +71,35 @@ const Lobby = () => {
               <label className="text-[10px] font-pixel text-pc-text-muted block mb-1.5">
                 Theme color:
               </label>
-              <div className="flex gap-1.5 flex-wrap">
+              <div className="grid grid-cols-4 gap-2 max-h-32 overflow-y-auto">
                 {THEME_COLORS.map((c) => (
                   <button
                     key={c.hue}
                     onClick={() => setThemeColor(c)}
-                    title={c.label}
-                    className="w-6 h-6 border-2 transition-all hover:brightness-125"
+                    className="flex flex-col items-center gap-1 p-2 border-2 transition-all hover:brightness-125"
                     style={{
-                      backgroundColor: `hsl(${c.hue} ${c.sat}% 40%)`,
                       borderColor:
                         themeColor.hue === c.hue
                           ? "#fff"
                           : "hsl(var(--pc-border))",
+                      backgroundColor: themeColor.hue === c.hue ? "hsl(var(--pc-bubble))" : "transparent",
                       boxShadow:
                         themeColor.hue === c.hue
                           ? `0 0 6px hsl(${c.hue} ${c.sat}% 50% / 0.6)`
                           : "none",
                     }}
-                  />
+                  >
+                    <div
+                      className="w-6 h-6 border"
+                      style={{
+                        backgroundColor: `hsl(${c.hue} ${c.sat}% 40%)`,
+                        borderColor: "hsl(var(--pc-border))",
+                      }}
+                    />
+                    <span className="text-[7px] font-pixel text-pc-text text-center leading-none">
+                      {c.label}
+                    </span>
+                  </button>
                 ))}
               </div>
             </div>
