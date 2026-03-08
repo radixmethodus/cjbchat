@@ -67,11 +67,11 @@ const Room = () => {
       <div className="shrink-0 flex items-center justify-between px-3 py-2 border-b-2 border-pc-border bg-pc-body">
         <button
           onClick={() => navigate("/")}
-          className="text-[10px] font-pixel text-pc-green hover:brightness-125 transition-all"
+          className="text-[10px] font-pixel text-pc-blue hover:brightness-125 transition-all"
         >
           ◀ Back
         </button>
-        <span className="text-xs font-pixel font-bold text-pc-green">
+        <span className="text-xs font-pixel font-bold text-pc-blue">
           Chat Room {room}
         </span>
         <span className="text-[8px] font-pixel text-pc-text-muted">
