@@ -10,7 +10,7 @@ export const THEME_COLORS: ThemeColor[] = [
   { label: "Blue", hue: 210, sat: 100 },
   { label: "Sky", hue: 195, sat: 90 },
   { label: "Navy", hue: 220, sat: 95 },
-  { label: "Cyan", hue: 180, sat: 100 },
+  { label: "Cyan", hue: 185, sat: 100 },
   { label: "Teal", hue: 180, sat: 75 },
   { label: "Green", hue: 140, sat: 80 },
   { label: "Forest", hue: 130, sat: 75 },
