@@ -8,13 +8,21 @@ export type ThemeColor = {
 
 export const THEME_COLORS: ThemeColor[] = [
   { label: "Blue", hue: 210, sat: 100 },
-  { label: "Green", hue: 140, sat: 80 },
-  { label: "Red", hue: 0, sat: 85 },
-  { label: "Orange", hue: 30, sat: 95 },
-  { label: "Purple", hue: 270, sat: 80 },
+  { label: "Sky", hue: 195, sat: 90 },
   { label: "Teal", hue: 180, sat: 75 },
-  { label: "Pink", hue: 330, sat: 80 },
+  { label: "Green", hue: 140, sat: 80 },
+  { label: "Lime", hue: 85, sat: 80 },
   { label: "Yellow", hue: 50, sat: 95 },
+  { label: "Orange", hue: 30, sat: 95 },
+  { label: "Red", hue: 0, sat: 85 },
+  { label: "Rose", hue: 345, sat: 80 },
+  { label: "Pink", hue: 330, sat: 80 },
+  { label: "Magenta", hue: 300, sat: 75 },
+  { label: "Purple", hue: 270, sat: 80 },
+  { label: "Indigo", hue: 240, sat: 70 },
+  { label: "Slate", hue: 215, sat: 25 },
+  { label: "Mint", hue: 160, sat: 65 },
+  { label: "Coral", hue: 15, sat: 90 },
 ];
 
 const STORAGE_KEY = "pc_theme_hue";
