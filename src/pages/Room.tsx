@@ -114,7 +114,7 @@ const Room = () => {
             <span>↳ Replying to <strong style={{ color: replyTo.color }}>{replyTo.nickname}</strong></span>
             <button
               onClick={() => setReplyTo(null)}
-              className="text-pc-green hover:brightness-125"
+              className="text-pc-blue hover:brightness-125"
             >
               ✕
             </button>
@@ -130,12 +130,12 @@ const Room = () => {
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             maxLength={2000}
             placeholder="Type a message..."
-            className="pc-input flex-1 px-3 py-2 text-[10px] font-pixel bg-pc-screen border-2 border-pc-border text-pc-text outline-none focus:border-pc-green"
+            className="pc-input flex-1 px-3 py-2 text-[10px] font-pixel bg-pc-screen border-2 border-pc-border text-pc-text outline-none focus:border-pc-blue"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || sending}
-            className="px-4 py-2 text-[10px] font-pixel font-bold bg-pc-green text-primary-foreground border-2 border-pc-green-dark disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:brightness-90 transition-all"
+            className="px-4 py-2 text-[10px] font-pixel font-bold bg-pc-blue text-primary-foreground border-2 border-pc-blue-dark disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:brightness-90 transition-all"
           >
             Send
           </button>
