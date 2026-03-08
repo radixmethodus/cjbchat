@@ -35,13 +35,15 @@ const MessageBubble = ({ message, isOwn, showName, onReply }: Props) => {
         </div>
       )}
 
-      {/* Username */}
-      <div
-        className="text-[10px] font-pixel font-bold px-1 mb-0.5"
-        style={{ color: message.color }}
-      >
-        {message.nickname}
-      </div>
+      {/* Username - only show if different from previous */}
+      {showName && (
+        <div
+          className="text-[10px] font-pixel font-bold px-1 mb-0.5"
+          style={{ color: message.color }}
+        >
+          {message.nickname}
+        </div>
+      )}
 
       {/* Bubble */}
       <button
