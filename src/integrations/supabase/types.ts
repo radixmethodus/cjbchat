@@ -107,7 +107,7 @@ export type Database = {
       pc_messages: {
         Row: {
           color: string
-          content: string
+          content: string | null
           created_at: string
           file_type: string | null
           file_url: string | null
@@ -118,7 +118,7 @@ export type Database = {
         }
         Insert: {
           color?: string
-          content: string
+          content?: string | null
           created_at?: string
           file_type?: string | null
           file_url?: string | null
@@ -129,7 +129,7 @@ export type Database = {
         }
         Update: {
           color?: string
-          content?: string
+          content?: string | null
           created_at?: string
           file_type?: string | null
           file_url?: string | null

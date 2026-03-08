@@ -1,0 +1,1 @@
+ALTER TABLE public.pc_messages ALTER COLUMN content DROP NOT NULL;
