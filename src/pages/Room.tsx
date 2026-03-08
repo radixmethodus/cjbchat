@@ -123,14 +123,19 @@ const Room = () => {
               No messages yet. Say something!
             </p>
           ) : (
-            messages.map((msg) => (
-              <MessageBubble
-                key={msg.id}
-                message={msg}
-                isOwn={msg.nickname === nickname}
-                onReply={handleReply}
-              />
-            ))
+            messages.map((msg, i) => {
+              const prev = messages[i - 1];
+              const showName = !prev || prev.nickname !== msg.nickname;
+              return (
+                <MessageBubble
+                  key={msg.id}
+                  message={msg}
+                  isOwn={msg.nickname === nickname}
+                  showName={showName}
+                  onReply={handleReply}
+                />
+              );
+            })
           )}
         </div>
       </div>
