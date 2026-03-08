@@ -1,4 +1,5 @@
 import { forwardRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type Props = {
   src: string;
@@ -36,34 +37,30 @@ const ImageLightbox = forwardRef<HTMLDivElement, Props>(
           />
         </div>
 
-        {/* Lightbox overlay */}
-        {open && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpen(false);
-            }}
-          >
+        {/* Lightbox overlay — rendered via portal to escape bubble DOM */}
+        {open &&
+          createPortal(
             <div
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpen(false);
-              }}
-              className="absolute top-4 right-4 text-xl font-pixel text-white hover:brightness-75 z-50 cursor-pointer"
-              role="button"
-              tabIndex={0}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+              onClick={() => setOpen(false)}
             >
-              ✕
-            </div>
-            <img
-              src={src}
-              alt={alt}
-              className="max-w-[90vw] max-h-[90vh] object-contain border-2 border-pc-border"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        )}
+              <div
+                onClick={() => setOpen(false)}
+                className="absolute top-4 right-4 text-xl font-pixel text-white hover:brightness-75 z-50 cursor-pointer"
+                role="button"
+                tabIndex={0}
+              >
+                ✕
+              </div>
+              <img
+                src={src}
+                alt={alt}
+                className="max-w-[90vw] max-h-[90vh] object-contain border-2 border-pc-border"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>,
+            document.body
+          )}
       </div>
     );
   }
