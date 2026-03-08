@@ -137,7 +137,7 @@ const Lobby = () => {
             <button
               onClick={handleEnter}
               disabled={!nickname.trim()}
-              className="w-full px-4 py-2 text-xs font-pixel font-bold bg-pc-blue text-primary-foreground border-2 border-pc-blue-dark disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:brightness-90 transition-all"
+              className="w-full px-4 py-2 text-xs font-pixel font-bold bg-pc-blue-btn text-primary-foreground border-2 border-pc-blue-dark disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:brightness-90 transition-all"
             >
               Enter
             </button>
