@@ -18,10 +18,11 @@ export type PcMessage = {
 type Props = {
   message: PcMessage;
   isOwn: boolean;
+  showName: boolean;
   onReply: (msg: PcMessage) => void;
 };
 
-const MessageBubble = ({ message, isOwn, onReply }: Props) => {
+const MessageBubble = ({ message, isOwn, showName, onReply }: Props) => {
   const time = format(new Date(message.created_at), "HH:mm");
   const hasImage = message.file_url && message.file_type?.startsWith("image/");
 
