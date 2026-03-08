@@ -71,7 +71,7 @@ const Lobby = () => {
               <label className="text-[10px] font-pixel text-pc-text-muted block mb-1">
                 Theme color:
               </label>
-              <div className="grid grid-cols-8 gap-1 max-h-20 overflow-y-auto">
+              <div className="grid grid-cols-8 gap-1">
                 {THEME_COLORS.map((c) => (
                   <button
                     key={c.hue}
