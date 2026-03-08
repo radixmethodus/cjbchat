@@ -101,17 +101,23 @@ const Lobby = () => {
               </label>
               <input
                 type="text"
+                name="pc-nickname"
+                id="pc-nickname"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleEnter()}
                 maxLength={20}
                 placeholder="Nickname..."
-                autoComplete="off"
+                autoComplete="new-password"
                 autoCorrect="off"
                 autoCapitalize="off"
                 spellCheck={false}
                 data-form-type="other"
                 data-lpignore="true"
+                data-1p-ignore="true"
+                data-protonpass-ignore="true"
+                aria-autocomplete="none"
+                role="presentation"
                 className="pc-input w-full px-3 py-2 text-xs font-pixel bg-pc-screen border-2 border-pc-border text-pc-text outline-none focus:border-pc-blue"
               />
             </div>
