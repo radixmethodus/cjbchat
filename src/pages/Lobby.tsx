@@ -68,16 +68,18 @@ const Lobby = () => {
           <div className="flex flex-col gap-3">
             {/* Color selector */}
             <div>
-              <label className="text-[10px] font-pixel text-pc-text-muted block mb-1.5">
+              <label className="text-[10px] font-pixel text-pc-text-muted block mb-1">
                 Theme color:
               </label>
-              <div className="grid grid-cols-4 gap-2 max-h-32 overflow-y-auto">
+              <div className="grid grid-cols-8 gap-1 max-h-20 overflow-y-auto">
                 {THEME_COLORS.map((c) => (
                   <button
                     key={c.hue}
                     onClick={() => setThemeColor(c)}
-                    className="flex flex-col items-center gap-1 p-2 border-2 transition-all hover:brightness-125"
+                    title={c.label}
+                    className="flex flex-col items-center gap-0.5 p-1 border transition-all hover:brightness-125"
                     style={{
+                      borderWidth: "1px",
                       borderColor:
                         themeColor.hue === c.hue
                           ? "#fff"
@@ -85,18 +87,18 @@ const Lobby = () => {
                       backgroundColor: themeColor.hue === c.hue ? "hsl(var(--pc-bubble))" : "transparent",
                       boxShadow:
                         themeColor.hue === c.hue
-                          ? `0 0 6px hsl(${c.hue} ${c.sat}% 50% / 0.6)`
+                          ? `0 0 4px hsl(${c.hue} ${c.sat}% 50% / 0.5)`
                           : "none",
                     }}
                   >
                     <div
-                      className="w-6 h-6 border"
+                      className="w-4 h-4"
                       style={{
                         backgroundColor: `hsl(${c.hue} ${c.sat}% 40%)`,
-                        borderColor: "hsl(var(--pc-border))",
+                        border: "1px solid hsl(var(--pc-border))",
                       }}
                     />
-                    <span className="text-[7px] font-pixel text-pc-text text-center leading-none">
+                    <span className="text-[6px] font-pixel text-pc-text text-center leading-none">
                       {c.label}
                     </span>
                   </button>
