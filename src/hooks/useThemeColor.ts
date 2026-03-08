@@ -37,13 +37,17 @@ const STORAGE_KEY = "pc_theme_hue";
 
 function applyTheme(hue: number, sat: number) {
   const root = document.documentElement;
-  const accent = `${hue} ${sat}% 40%`;
-  const accentDark = `${hue} ${Math.round(sat * 0.85)}% 28%`;
-  const highlight = `${hue} ${sat}% 46%`;
+  // Ensure accent is bright enough for text on dark bg (min 50% lightness)
+  const textL = Math.max(50, Math.round(40 + sat * 0.15));
+  const accent = `${hue} ${sat}% ${textL}%`;
+  const accentDark = `${hue} ${Math.round(sat * 0.85)}% ${Math.max(28, textL - 14)}%`;
+  const highlight = `${hue} ${sat}% ${Math.min(60, textL + 6)}%`;
+  const btnBg = `${hue} ${sat}% 40%`;
 
   root.style.setProperty("--pc-blue", accent);
   root.style.setProperty("--pc-blue-dark", accentDark);
   root.style.setProperty("--pc-highlight", highlight);
+  root.style.setProperty("--pc-blue-btn", btnBg);
   root.style.setProperty("--primary", accent);
   root.style.setProperty("--accent", accent);
   root.style.setProperty("--ring", accent);
