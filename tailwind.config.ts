@@ -66,6 +66,7 @@ export default {
           "text-muted": "hsl(var(--pc-text-muted))",
           blue: "hsl(var(--pc-blue))",
           "blue-dark": "hsl(var(--pc-blue-dark))",
+          "blue-btn": "hsl(var(--pc-blue-btn))",
           border: "hsl(var(--pc-border))",
           hinge: "hsl(var(--pc-hinge))",
           highlight: "hsl(var(--pc-highlight))",
