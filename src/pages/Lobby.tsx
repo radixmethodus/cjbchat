@@ -1,0 +1,94 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+const ROOMS = ["A", "B", "C", "D"] as const;
+
+const Lobby = () => {
+  const [nickname, setNickname] = useState(
+    () => sessionStorage.getItem("pc_nickname") || ""
+  );
+  const [selectedRoom, setSelectedRoom] = useState<string>("A");
+  const navigate = useNavigate();
+
+  const handleEnter = () => {
+    const trimmed = nickname.trim();
+    if (!trimmed) return;
+    if (trimmed.length > 20) return;
+    sessionStorage.setItem("pc_nickname", trimmed);
+    navigate(`/room/${selectedRoom}`);
+  };
+
+  return (
+    <div className="flex items-center justify-center min-h-[100dvh] bg-pc-body p-4">
+      <div className="w-full max-w-md">
+        {/* Title */}
+        <div className="text-center mb-6">
+          <h1 className="text-xl font-bold text-pc-green font-pixel tracking-wider">
+            PictoChat
+          </h1>
+          <p className="text-[10px] text-pc-text-muted font-pixel mt-1">
+            Select a chat room
+          </p>
+        </div>
+
+        {/* Room list - DS top screen */}
+        <div className="ds-screen p-3 mb-0">
+          <div className="space-y-2">
+            {ROOMS.map((room) => (
+              <button
+                key={room}
+                onClick={() => setSelectedRoom(room)}
+                className={`room-card w-full flex items-center gap-3 px-3 py-2 border-2 text-left ${
+                  selectedRoom === room ? "selected" : ""
+                }`}
+                style={{
+                  borderColor:
+                    selectedRoom === room
+                      ? "hsl(var(--pc-green))"
+                      : "hsl(var(--pc-border))",
+                }}
+              >
+                <span className="text-xs font-pixel font-bold text-pc-green">
+                  ▶
+                </span>
+                <span className="text-xs font-pixel text-pc-text">
+                  Chat Room {room}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Hinge */}
+        <div className="ds-hinge" />
+
+        {/* Bottom screen - nickname + enter */}
+        <div className="ds-screen-bottom p-4">
+          <div className="flex flex-col gap-3">
+            <label className="text-[10px] font-pixel text-pc-text-muted">
+              Enter your nickname:
+            </label>
+            <input
+              type="text"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleEnter()}
+              maxLength={20}
+              placeholder="Nickname..."
+              className="pc-input w-full px-3 py-2 text-xs font-pixel bg-pc-screen border-2 border-pc-border text-pc-text outline-none focus:border-pc-green"
+            />
+            <button
+              onClick={handleEnter}
+              disabled={!nickname.trim()}
+              className="w-full px-4 py-2 text-xs font-pixel font-bold bg-pc-green text-primary-foreground border-2 border-pc-green-dark disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:brightness-90 transition-all"
+            >
+              Enter
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Lobby;
