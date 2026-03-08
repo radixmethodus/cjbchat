@@ -18,15 +18,16 @@ export type PcMessage = {
 type Props = {
   message: PcMessage;
   isOwn: boolean;
+  showName: boolean;
   onReply: (msg: PcMessage) => void;
 };
 
-const MessageBubble = ({ message, isOwn, onReply }: Props) => {
+const MessageBubble = ({ message, isOwn, showName, onReply }: Props) => {
   const time = format(new Date(message.created_at), "HH:mm");
   const hasImage = message.file_url && message.file_type?.startsWith("image/");
 
   return (
-    <div className={`flex flex-col mb-4 ${isOwn ? "items-end" : "items-start"}`}>
+    <div className={`flex flex-col ${showName ? "mt-3" : "mt-0.5"} ${isOwn ? "items-end" : "items-start"}`}>
       {/* Reply preview */}
       {message.reply_nickname && (
         <div className="text-[8px] font-pixel text-pc-text-muted px-2 mb-0.5 max-w-[80%] truncate">
@@ -34,13 +35,15 @@ const MessageBubble = ({ message, isOwn, onReply }: Props) => {
         </div>
       )}
 
-      {/* Username */}
-      <div
-        className="text-[10px] font-pixel font-bold px-1 mb-0.5"
-        style={{ color: message.color }}
-      >
-        {message.nickname}
-      </div>
+      {/* Username - only show if different from previous */}
+      {showName && (
+        <div
+          className="text-[10px] font-pixel font-bold px-1 mb-0.5"
+          style={{ color: message.color }}
+        >
+          {message.nickname}
+        </div>
+      )}
 
       {/* Bubble */}
       <button
