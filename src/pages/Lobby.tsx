@@ -106,6 +106,12 @@ const Lobby = () => {
                 onKeyDown={(e) => e.key === "Enter" && handleEnter()}
                 maxLength={20}
                 placeholder="Nickname..."
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                data-form-type="other"
+                data-lpignore="true"
                 className="pc-input w-full px-3 py-2 text-xs font-pixel bg-pc-screen border-2 border-pc-border text-pc-text outline-none focus:border-pc-blue"
               />
             </div>

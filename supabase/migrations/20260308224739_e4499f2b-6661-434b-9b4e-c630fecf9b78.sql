@@ -1,0 +1,3 @@
+ALTER TABLE public.pc_messages 
+  ADD COLUMN IF NOT EXISTS file_url text DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS file_type text DEFAULT NULL;

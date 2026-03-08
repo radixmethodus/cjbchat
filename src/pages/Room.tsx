@@ -132,6 +132,12 @@ const Room = () => {
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             maxLength={2000}
             placeholder="Type a message..."
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            data-form-type="other"
+            data-lpignore="true"
             className="pc-input flex-1 px-3 py-2 text-[10px] font-pixel bg-pc-screen border-2 border-pc-border text-pc-text outline-none focus:border-pc-blue"
           />
           <button
