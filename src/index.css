@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap");
+@import url("https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css");
 
 @tailwind base;
 @tailwind components;
@@ -50,7 +50,7 @@
     --sidebar-border: 0 0% 20%;
     --sidebar-ring: 210 100% 40%;
 
-    --font-pixel: "Silkscreen", monospace;
+    --font-pixel: "Galmuri11", "Galmuri9", monospace;
   }
 }
 

@@ -77,7 +77,7 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        pixel: ["Silkscreen", "monospace"],
+        pixel: ["Galmuri11", "Galmuri9", "monospace"],
       },
       keyframes: {
         "accordion-down": {
