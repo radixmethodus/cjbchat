@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useThemeColor, THEME_COLORS } from "@/hooks/useThemeColor";
 
 const ROOMS = ["A", "B", "C", "D"] as const;
 
@@ -9,11 +10,11 @@ const Lobby = () => {
   );
   const [selectedRoom, setSelectedRoom] = useState<string>("A");
   const navigate = useNavigate();
+  const { selected: themeColor, setSelected: setThemeColor } = useThemeColor();
 
   const handleEnter = () => {
     const trimmed = nickname.trim();
-    if (!trimmed) return;
-    if (trimmed.length > 20) return;
+    if (!trimmed || trimmed.length > 20) return;
     sessionStorage.setItem("pc_nickname", trimmed);
     navigate(`/room/${selectedRoom}`);
   };
@@ -22,7 +23,7 @@ const Lobby = () => {
     <div className="flex items-center justify-center min-h-[100dvh] bg-pc-body p-4">
       <div className="w-full max-w-md">
         {/* Title */}
-         <div className="text-center mb-6">
+        <div className="text-center mb-6">
           <h1 className="text-xl font-bold text-pc-blue font-pixel tracking-wider">
             PictoChat
           </h1>
@@ -62,21 +63,53 @@ const Lobby = () => {
         {/* Hinge */}
         <div className="ds-hinge" />
 
-        {/* Bottom screen - nickname + enter */}
+        {/* Bottom screen - nickname + color + enter */}
         <div className="ds-screen-bottom p-4">
           <div className="flex flex-col gap-3">
-            <label className="text-[10px] font-pixel text-pc-text-muted">
-              Enter your nickname:
-            </label>
-            <input
-              type="text"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleEnter()}
-              maxLength={20}
-              placeholder="Nickname..."
-              className="pc-input w-full px-3 py-2 text-xs font-pixel bg-pc-screen border-2 border-pc-border text-pc-text outline-none focus:border-pc-blue"
-            />
+            {/* Color selector */}
+            <div>
+              <label className="text-[10px] font-pixel text-pc-text-muted block mb-1.5">
+                Theme color:
+              </label>
+              <div className="flex gap-1.5 flex-wrap">
+                {THEME_COLORS.map((c) => (
+                  <button
+                    key={c.hue}
+                    onClick={() => setThemeColor(c)}
+                    title={c.label}
+                    className="w-6 h-6 border-2 transition-all hover:brightness-125"
+                    style={{
+                      backgroundColor: `hsl(${c.hue} ${c.sat}% 40%)`,
+                      borderColor:
+                        themeColor.hue === c.hue
+                          ? "#fff"
+                          : "hsl(var(--pc-border))",
+                      boxShadow:
+                        themeColor.hue === c.hue
+                          ? `0 0 6px hsl(${c.hue} ${c.sat}% 50% / 0.6)`
+                          : "none",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Nickname input */}
+            <div>
+              <label className="text-[10px] font-pixel text-pc-text-muted block mb-1.5">
+                Enter your nickname:
+              </label>
+              <input
+                type="text"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleEnter()}
+                maxLength={20}
+                placeholder="Nickname..."
+                className="pc-input w-full px-3 py-2 text-xs font-pixel bg-pc-screen border-2 border-pc-border text-pc-text outline-none focus:border-pc-blue"
+              />
+            </div>
+
             <button
               onClick={handleEnter}
               disabled={!nickname.trim()}

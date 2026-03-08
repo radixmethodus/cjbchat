@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useRoomMessages } from "@/hooks/useRoomMessages";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import MessageBubble, { type PcMessage } from "@/components/pictochat/MessageBubble";
 import { toast } from "sonner";
 
@@ -25,6 +26,7 @@ const Room = () => {
 
   const room = roomId?.toUpperCase() || "A";
   const { messages, loading, sendMessage } = useRoomMessages(room);
+  useThemeColor(); // Apply persisted theme
 
   // Redirect if no nickname
   useEffect(() => {

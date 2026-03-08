@@ -87,40 +87,10 @@
 .pc-bubble {
   background: hsl(var(--pc-bubble));
   border: 2px solid hsl(var(--pc-border));
-  position: relative;
 }
 
-.pc-bubble::after {
-  content: "";
-  position: absolute;
-  bottom: -8px;
-  left: 12px;
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 8px solid hsl(var(--pc-bubble));
-}
-
-.pc-bubble::before {
-  content: "";
-  position: absolute;
-  bottom: -11px;
-  left: 10px;
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 10px solid hsl(var(--pc-border));
-}
-
-.pc-bubble-own::after {
-  left: auto;
-  right: 12px;
-}
-.pc-bubble-own::before {
-  left: auto;
-  right: 10px;
+.pc-bubble-own {
+  /* no visual difference needed beyond alignment */
 }
 
 /* DS hinge divider */
