@@ -71,7 +71,7 @@ const Lobby = () => {
               <label className="text-[10px] font-pixel text-pc-text-muted block mb-1">
                 Theme color:
               </label>
-              <div className="grid grid-cols-8 gap-1">
+              <div className="grid grid-cols-6 gap-1">
                 {THEME_COLORS.map((c) => (
                   <button
                     key={c.hue}
@@ -92,13 +92,13 @@ const Lobby = () => {
                     }}
                   >
                     <div
-                      className="w-4 h-4"
+                      className="w-5 h-5"
                       style={{
                         backgroundColor: `hsl(${c.hue} ${c.sat}% 40%)`,
                         border: "1px solid hsl(var(--pc-border))",
                       }}
                     />
-                    <span className="text-[6px] font-pixel text-pc-text text-center leading-none">
+                    <span className="text-[7px] font-pixel text-pc-text text-center leading-none">
                       {c.label}
                     </span>
                   </button>
