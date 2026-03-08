@@ -25,7 +25,6 @@ export function useRoomMessages(room: string) {
         .limit(200);
 
       if (!error && data) {
-        // Resolve reply references
         const msgs = data as unknown as PcMessage[];
         const resolved = msgs.map((m) => {
           if (m.reply_to) {
@@ -52,7 +51,6 @@ export function useRoomMessages(room: string) {
         { event: "INSERT", schema: "public", table: "pc_messages", filter: `room=eq.${room}` },
         async (payload: RealtimePayload) => {
           const newMsg = payload.new as unknown as PcMessage;
-          // Resolve reply
           if (newMsg.reply_to) {
             const { data } = await supabase
               .from("pc_messages" as any)
@@ -78,18 +76,29 @@ export function useRoomMessages(room: string) {
   }, [room]);
 
   const sendMessage = useCallback(
-    async (nickname: string, content: string, color: string, replyTo?: string) => {
+    async (nickname: string, content: string, color: string, replyTo?: string, fileUrl?: string, fileType?: string) => {
       const { error } = await supabase.from("pc_messages" as any).insert({
         room,
         nickname,
         color,
-        content,
+        content: content || null,
         reply_to: replyTo || null,
+        file_url: fileUrl || null,
+        file_type: fileType || null,
       } as any);
       return error;
     },
     [room]
   );
 
-  return { messages, loading, sendMessage };
+  const uploadImage = useCallback(async (file: File) => {
+    const ext = file.name.split(".").pop();
+    const path = `${room}/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("pc-images").upload(path, file);
+    if (error) return { url: null, error };
+    const { data: urlData } = supabase.storage.from("pc-images").getPublicUrl(path);
+    return { url: urlData.publicUrl, error: null };
+  }, [room]);
+
+  return { messages, loading, sendMessage, uploadImage };
 }

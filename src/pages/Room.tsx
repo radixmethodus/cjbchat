@@ -5,7 +5,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import MessageBubble, { type PcMessage } from "@/components/pictochat/MessageBubble";
 import { toast } from "sonner";
 
-const COLORS = ["#00B800", "#E03030", "#3080E0", "#E0A000", "#B040D0", "#E07020", "#20B0B0", "#808080"];
+const COLORS = ["#0066CC", "#E03030", "#3080E0", "#E0A000", "#B040D0", "#E07020", "#20B0B0", "#808080"];
 
 const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -23,17 +23,16 @@ const Room = () => {
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const room = roomId?.toUpperCase() || "A";
-  const { messages, loading, sendMessage } = useRoomMessages(room);
-  useThemeColor(); // Apply persisted theme
+  const { messages, loading, sendMessage, uploadImage } = useRoomMessages(room);
+  useThemeColor();
 
-  // Redirect if no nickname
   useEffect(() => {
     if (!nickname) navigate("/");
   }, [nickname, navigate]);
 
-  // Auto-scroll on new messages
   useEffect(() => {
     const el = scrollRef.current;
     if (el) {
@@ -55,6 +54,37 @@ const Room = () => {
     }
     setSending(false);
   }, [input, nickname, color, replyTo, sending, sendMessage]);
+
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !nickname || sending) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Only images are allowed");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Max file size is 5MB");
+      return;
+    }
+    setSending(true);
+    const { url, error: upError } = await uploadImage(file);
+    if (upError || !url) {
+      toast.error("Upload failed");
+      setSending(false);
+      return;
+    }
+    const error = await sendMessage(nickname, input.trim(), color, replyTo?.id, url, file.type);
+    if (error) {
+      toast.error(error.message || "Failed to send");
+    } else {
+      setInput("");
+      setReplyTo(null);
+      inputRef.current?.focus();
+    }
+    setSending(false);
+    // Reset file input
+    if (fileRef.current) fileRef.current.value = "";
+  }, [input, nickname, color, replyTo, sending, sendMessage, uploadImage]);
 
   const handleReply = useCallback((msg: PcMessage) => {
     setReplyTo(msg);
@@ -124,6 +154,23 @@ const Room = () => {
         )}
 
         <div className="flex gap-2">
+          {/* Image upload button */}
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={sending}
+            className="px-2 py-2 text-[10px] font-pixel bg-pc-screen border-2 border-pc-border text-pc-text-muted hover:text-pc-blue hover:border-pc-blue disabled:opacity-40 transition-all"
+            title="Upload image"
+          >
+            📷
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageUpload}
+          />
+
           <input
             ref={inputRef}
             type="text"
@@ -132,6 +179,12 @@ const Room = () => {
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             maxLength={2000}
             placeholder="Type a message..."
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            data-form-type="other"
+            data-lpignore="true"
             className="pc-input flex-1 px-3 py-2 text-[10px] font-pixel bg-pc-screen border-2 border-pc-border text-pc-text outline-none focus:border-pc-blue"
           />
           <button
