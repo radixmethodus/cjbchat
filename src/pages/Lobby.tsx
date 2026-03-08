@@ -25,7 +25,7 @@ const Lobby = () => {
         {/* Title */}
         <div className="text-center mb-6">
           <h1 className="text-xl font-bold text-pc-blue font-pixel tracking-wider">
-            PictoChat
+            CJ's Chat
           </h1>
           <p className="text-[10px] text-pc-text-muted font-pixel mt-1">
             Select a chat room
