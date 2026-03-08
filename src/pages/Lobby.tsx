@@ -22,8 +22,8 @@ const Lobby = () => {
     <div className="flex items-center justify-center min-h-[100dvh] bg-pc-body p-4">
       <div className="w-full max-w-md">
         {/* Title */}
-        <div className="text-center mb-6">
-          <h1 className="text-xl font-bold text-pc-green font-pixel tracking-wider">
+         <div className="text-center mb-6">
+          <h1 className="text-xl font-bold text-pc-blue font-pixel tracking-wider">
             PictoChat
           </h1>
           <p className="text-[10px] text-pc-text-muted font-pixel mt-1">
@@ -44,11 +44,11 @@ const Lobby = () => {
                 style={{
                   borderColor:
                     selectedRoom === room
-                      ? "hsl(var(--pc-green))"
+                      ? "hsl(var(--pc-blue))"
                       : "hsl(var(--pc-border))",
                 }}
               >
-                <span className="text-xs font-pixel font-bold text-pc-green">
+                <span className="text-xs font-pixel font-bold text-pc-blue">
                   ▶
                 </span>
                 <span className="text-xs font-pixel text-pc-text">
@@ -75,12 +75,12 @@ const Lobby = () => {
               onKeyDown={(e) => e.key === "Enter" && handleEnter()}
               maxLength={20}
               placeholder="Nickname..."
-              className="pc-input w-full px-3 py-2 text-xs font-pixel bg-pc-screen border-2 border-pc-border text-pc-text outline-none focus:border-pc-green"
+              className="pc-input w-full px-3 py-2 text-xs font-pixel bg-pc-screen border-2 border-pc-border text-pc-text outline-none focus:border-pc-blue"
             />
             <button
               onClick={handleEnter}
               disabled={!nickname.trim()}
-              className="w-full px-4 py-2 text-xs font-pixel font-bold bg-pc-green text-primary-foreground border-2 border-pc-green-dark disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:brightness-90 transition-all"
+              className="w-full px-4 py-2 text-xs font-pixel font-bold bg-pc-blue text-primary-foreground border-2 border-pc-blue-dark disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:brightness-90 transition-all"
             >
               Enter
             </button>
