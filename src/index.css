@@ -132,9 +132,9 @@
     inset 0 -1px 2px rgba(255, 255, 255, 0.05);
 }
 
-/* Green accent text */
-.pc-green {
-  color: hsl(var(--pc-green));
+/* Blue accent text */
+.pc-blue {
+  color: hsl(var(--pc-blue));
 }
 
 /* Room card hover */
@@ -142,11 +142,11 @@
   transition: background 0.15s;
 }
 .room-card:hover {
-  background: hsl(var(--pc-green) / 0.15);
+  background: hsl(var(--pc-blue) / 0.15);
 }
 .room-card.selected {
-  background: hsl(var(--pc-green) / 0.25);
-  border-color: hsl(var(--pc-green));
+  background: hsl(var(--pc-blue) / 0.25);
+  border-color: hsl(var(--pc-blue));
 }
 
 /* Scrollbar styling for DS feel */
