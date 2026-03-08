@@ -104,6 +104,44 @@ export type Database = {
           },
         ]
       }
+      pc_messages: {
+        Row: {
+          color: string
+          content: string
+          created_at: string
+          id: string
+          nickname: string
+          reply_to: string | null
+          room: string
+        }
+        Insert: {
+          color?: string
+          content: string
+          created_at?: string
+          id?: string
+          nickname: string
+          reply_to?: string | null
+          room: string
+        }
+        Update: {
+          color?: string
+          content?: string
+          created_at?: string
+          id?: string
+          nickname?: string
+          reply_to?: string | null
+          room?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pc_messages_reply_to_fkey"
+            columns: ["reply_to"]
+            isOneToOne: false
+            referencedRelation: "pc_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       secret_messages: {
         Row: {
           content: string | null
