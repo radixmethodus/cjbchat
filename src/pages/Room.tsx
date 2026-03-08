@@ -26,6 +26,7 @@ const Room = () => {
 
   const room = roomId?.toUpperCase() || "A";
   const { messages, loading, sendMessage } = useRoomMessages(room);
+  useThemeColor(); // Apply persisted theme
 
   // Redirect if no nickname
   useEffect(() => {
