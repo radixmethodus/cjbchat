@@ -27,7 +27,7 @@ const MessageBubble = ({ message, isOwn, showName, onReply }: Props) => {
   const hasImage = message.file_url && message.file_type?.startsWith("image/");
 
   return (
-    <div className={`flex flex-col mb-4 ${isOwn ? "items-end" : "items-start"}`}>
+    <div className={`flex flex-col ${showName ? "mt-3" : "mt-0.5"} ${isOwn ? "items-end" : "items-start"}`}>
       {/* Reply preview */}
       {message.reply_nickname && (
         <div className="text-[8px] font-pixel text-pc-text-muted px-2 mb-0.5 max-w-[80%] truncate">
