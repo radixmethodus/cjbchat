@@ -4,9 +4,11 @@ import { useRoomMessages } from "@/hooks/useRoomMessages";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTypingPresence } from "@/hooks/useTypingPresence";
 import { useStars } from "@/hooks/useStars";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import MessageBubble, { type PcMessage } from "@/components/pictochat/MessageBubble";
 import { supabase } from "@/integrations/supabase/client";
-
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 const playSendSound = () => {
   try {
     const ctx = new AudioContext();
