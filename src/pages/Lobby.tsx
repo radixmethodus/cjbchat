@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useThemeColor, THEME_COLORS } from "@/hooks/useThemeColor";
+import { useRoomStats } from "@/hooks/useRoomStats";
 
 const ROOMS = ["A", "B", "C", "D"] as const;
 
@@ -11,6 +12,7 @@ const Lobby = () => {
   const [selectedRoom, setSelectedRoom] = useState<string>("A");
   const navigate = useNavigate();
   const { selected: themeColor, setSelected: setThemeColor } = useThemeColor();
+  const { data: roomStats } = useRoomStats();
 
   const handleEnter = () => {
     const trimmed = nickname.trim();
@@ -59,7 +61,7 @@ const Lobby = () => {
                   Chat Room {room}
                 </span>
                 <span className="text-[10px] font-pixel text-pc-text-muted">
-                  0/16
+                  {roomStats?.[room] || 0} msgs
                 </span>
               </button>
             ))}
