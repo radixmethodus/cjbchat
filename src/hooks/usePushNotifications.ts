@@ -20,10 +20,16 @@ type PushErrorCode =
 
 type PushError = { code: PushErrorCode; message: string };
 
-async function getActiveRegistration(): Promise<ServiceWorkerRegistration | null> {
-  // Prefer the currently controlling registration, but fall back to any registration.
-  const reg = await navigator.serviceWorker.getRegistration();
-  if (reg) return reg;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function getRegistrationWithRetry(): Promise<ServiceWorkerRegistration | null> {
+  // registerSW() should register quickly, but it may take a tick to appear.
+  for (let i = 0; i < 8; i++) {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (reg) return reg;
+    await sleep(250);
+  }
+  // Fallback: any registration (older or uncontrolled)
   const regs = await navigator.serviceWorker.getRegistrations();
   return regs[0] ?? null;
 }
@@ -52,19 +58,24 @@ export function usePushNotifications(nickname: string | null) {
       return;
     }
 
+    let cancelled = false;
+
     (async () => {
+      setLoading(true);
       try {
-        const reg = await getActiveRegistration();
+        const reg = await getRegistrationWithRetry();
         if (!reg) {
-          setError({
-            code: "service_worker_not_ready",
-            message: "Service worker is not active yet — refresh once.",
-          });
+          if (!cancelled) {
+            setError({
+              code: "service_worker_not_ready",
+              message: "Service worker is still starting — try again in a moment.",
+            });
+          }
           return;
         }
 
         const sub = await reg.pushManager.getSubscription();
-        if (sub) {
+        if (!cancelled && sub) {
           const { data } = await supabase
             .from("push_subscriptions" as any)
             .select("notify_all, notify_mentions")
@@ -74,15 +85,21 @@ export function usePushNotifications(nickname: string | null) {
           setIsSubscribed(true);
           setNotifyAll((data as any)?.notify_all ?? true);
           setNotifyMentions((data as any)?.notify_mentions ?? true);
-        } else {
+        }
+
+        if (!cancelled && !sub) {
           setIsSubscribed(false);
         }
       } catch {
         // ignore
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [nickname]);
 
   const subscribe = useCallback(async () => {
@@ -112,11 +129,11 @@ export function usePushNotifications(nickname: string | null) {
         return false;
       }
 
-      const reg = await getActiveRegistration();
+      const reg = await getRegistrationWithRetry();
       if (!reg) {
         setError({
           code: "service_worker_not_ready",
-          message: "Service worker not ready — refresh and try again.",
+          message: "Service worker is still starting — try again in a moment.",
         });
         return false;
       }
@@ -168,7 +185,7 @@ export function usePushNotifications(nickname: string | null) {
     setActionLoading(true);
 
     try {
-      const reg = await getActiveRegistration();
+      const reg = await getRegistrationWithRetry();
       const sub = await reg?.pushManager.getSubscription();
       if (sub) {
         await supabase
@@ -192,7 +209,7 @@ export function usePushNotifications(nickname: string | null) {
       if (!isSubscribed) return;
 
       try {
-        const reg = await getActiveRegistration();
+        const reg = await getRegistrationWithRetry();
         const sub = await reg?.pushManager.getSubscription();
         if (sub) {
           await supabase
