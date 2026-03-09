@@ -6,7 +6,7 @@ import { useTypingPresence } from "@/hooks/useTypingPresence";
 import MessageBubble, { type PcMessage } from "@/components/pictochat/MessageBubble";
 import { supabase } from "@/integrations/supabase/client";
 
-const playMessageSound = () => {
+const playSendSound = () => {
   try {
     const ctx = new AudioContext();
     const osc = ctx.createOscillator();
@@ -20,6 +20,23 @@ const playMessageSound = () => {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.15);
+  } catch { /* no audio */ }
+};
+
+const playReceiveSound = () => {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(520, ctx.currentTime);
+    osc.frequency.setValueAtTime(440, ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.2);
   } catch { /* no audio */ }
 };
 
