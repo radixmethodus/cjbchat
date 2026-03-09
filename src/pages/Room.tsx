@@ -14,6 +14,7 @@ const Room = () => {
   const [input, setInput] = useState("");
   const [replyTo, setReplyTo] = useState<PcMessage | null>(null);
   const [sending, setSending] = useState(false);
+  const [discoMode, setDiscoMode] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -35,6 +36,15 @@ const Room = () => {
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
     if (!trimmed || !nickname || sending) return;
+
+    // Check for /disco command
+    if (trimmed.toLowerCase() === "/disco") {
+      setDiscoMode((prev) => !prev);
+      setInput("");
+      toast.success(discoMode ? "Disco mode OFF" : "🪩 Disco mode ON!");
+      return;
+    }
+
     setSending(true);
     const error = await sendMessage(nickname, trimmed, color, replyTo?.id);
     if (error) {
@@ -45,7 +55,7 @@ const Room = () => {
       inputRef.current?.focus();
     }
     setSending(false);
-  }, [input, nickname, color, replyTo, sending, sendMessage]);
+  }, [input, nickname, color, replyTo, sending, sendMessage, discoMode]);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -86,7 +96,7 @@ const Room = () => {
   if (!nickname) return null;
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-pc-body">
+    <div className={`flex flex-col h-[100dvh] bg-pc-body ${discoMode ? "disco-mode" : ""}`}>
       {/* Header bar */}
       <div className="shrink-0 flex items-center justify-between px-3 py-2 border-b-2 border-pc-border bg-pc-body">
         <button
