@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useRoomMessages } from "@/hooks/useRoomMessages";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { useTypingPresence } from "@/hooks/useTypingPresence";
 import MessageBubble, { type PcMessage } from "@/components/pictochat/MessageBubble";
 import { toast } from "sonner";
 
@@ -21,6 +22,7 @@ const Room = () => {
 
   const room = roomId?.toUpperCase() || "A";
   const { messages, loading, sendMessage, uploadImage } = useRoomMessages(room);
+  const { typingUsers, setTyping } = useTypingPresence(room, nickname);
 
   useEffect(() => {
     if (!nickname) navigate("/");
@@ -52,6 +54,7 @@ const Room = () => {
     } else {
       setInput("");
       setReplyTo(null);
+      setTyping(false);
       inputRef.current?.focus();
     }
     setSending(false);
@@ -81,6 +84,7 @@ const Room = () => {
     } else {
       setInput("");
       setReplyTo(null);
+      setTyping(false);
       inputRef.current?.focus();
     }
     setSending(false);
@@ -147,6 +151,14 @@ const Room = () => {
 
       {/* Bottom screen - input area */}
       <div className="shrink-0 ds-screen-bottom m-1 mt-0 p-3">
+        {/* Typing indicator */}
+        {typingUsers.length > 0 && (
+          <div className="text-[8px] font-pixel text-pc-text-muted mb-1 animate-pulse">
+            {typingUsers.length === 1
+              ? `${typingUsers[0]} is typing...`
+              : `${typingUsers.join(", ")} are typing...`}
+          </div>
+        )}
         {/* Reply indicator */}
         {replyTo && (
           <div className="flex items-center gap-2 mb-2 text-[8px] font-pixel text-pc-text-muted">
@@ -184,7 +196,10 @@ const Room = () => {
             name="pc-msg-input"
             id="pc-msg-input"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              setTyping(e.target.value.length > 0);
+            }}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             maxLength={2000}
             placeholder="Type a message..."
