@@ -67,7 +67,7 @@ export function useThemeColor() {
 
   useEffect(() => {
     applyTheme(selected.hue, selected.sat);
-    sessionStorage.setItem(STORAGE_KEY, String(selected.hue));
+    localStorage.setItem(STORAGE_KEY, String(selected.hue));
   }, [selected]);
 
   return { selected, setSelected, colors: THEME_COLORS };
