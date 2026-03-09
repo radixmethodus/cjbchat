@@ -249,7 +249,7 @@ const Room = () => {
                   )}
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-56 p-3 bg-pc-body border-2 border-pc-border rounded-[2px] font-pixel">
+              <PopoverContent className="w-56 p-3 bg-pc-body/95 border-2 border-pc-border rounded-[2px] font-pixel shadow-lg">
                 <p className="text-[9px] font-pixel font-bold text-pc-blue mb-2">
                   Push Notifications
                 </p>
