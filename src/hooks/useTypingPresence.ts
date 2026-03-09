@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const TYPING_TIMEOUT = 3000;
+const PRESENCE_DEBOUNCE = 2000; // Suppress leave→join flicker within this window
 
 export type PresenceEvent = {
   id: string;
@@ -16,6 +17,8 @@ export function useTypingPresence(room: string, nickname: string | null) {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialSyncDone = useRef(false);
+  // Track pending leave events so we can cancel them if a quick rejoin happens
+  const pendingLeaves = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   useEffect(() => {
     if (!nickname) return;
@@ -37,6 +40,13 @@ export function useTypingPresence(room: string, nickname: string | null) {
       })
       .on("presence", { event: "join" }, ({ key }) => {
         if (!initialSyncDone.current || key === nickname) return;
+        // If there's a pending leave for this user, cancel it (it was just a track() update)
+        const pendingLeave = pendingLeaves.current.get(key);
+        if (pendingLeave) {
+          clearTimeout(pendingLeave);
+          pendingLeaves.current.delete(key);
+          return;
+        }
         setPresenceEvents((prev) => [
           ...prev,
           { id: crypto.randomUUID(), type: "join", nickname: key, timestamp: Date.now() },
@@ -44,10 +54,15 @@ export function useTypingPresence(room: string, nickname: string | null) {
       })
       .on("presence", { event: "leave" }, ({ key }) => {
         if (!initialSyncDone.current || key === nickname) return;
-        setPresenceEvents((prev) => [
-          ...prev,
-          { id: crypto.randomUUID(), type: "leave", nickname: key, timestamp: Date.now() },
-        ]);
+        // Delay the leave event — if a join comes quickly, it was just a track() update
+        const timer = setTimeout(() => {
+          pendingLeaves.current.delete(key);
+          setPresenceEvents((prev) => [
+            ...prev,
+            { id: crypto.randomUUID(), type: "leave", nickname: key, timestamp: Date.now() },
+          ]);
+        }, PRESENCE_DEBOUNCE);
+        pendingLeaves.current.set(key, timer);
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
@@ -61,6 +76,8 @@ export function useTypingPresence(room: string, nickname: string | null) {
       channel.unsubscribe();
       channelRef.current = null;
       initialSyncDone.current = false;
+      pendingLeaves.current.forEach((t) => clearTimeout(t));
+      pendingLeaves.current.clear();
     };
   }, [room, nickname]);
 
