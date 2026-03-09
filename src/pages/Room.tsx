@@ -163,7 +163,7 @@ const Room = () => {
       inputRef.current?.focus();
     }
     setSending(false);
-  }, [input, nickname, color, replyTo, sending, sendMessage, discoMode, reportTarget, room, showAlert]);
+  }, [input, nickname, color, replyTo, sending, sendMessage, discoMode, reportTarget, room, showAlert, triggerPush]);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
