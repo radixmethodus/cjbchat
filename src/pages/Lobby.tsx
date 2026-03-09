@@ -61,7 +61,7 @@ const Lobby = () => {
                   Chat Room {room}
                 </span>
                 <span className="text-[10px] font-pixel text-pc-text-muted">
-                  0/16
+                  {roomStats?.[room] || 0} msgs
                 </span>
               </button>
             ))}
