@@ -15,6 +15,7 @@ export function usePushNotifications(nickname: string | null) {
   const [notifyAll, setNotifyAll] = useState(true);
   const [notifyMentions, setNotifyMentions] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [supported, setSupported] = useState(false);
 
   useEffect(() => {
@@ -37,8 +38,8 @@ export function usePushNotifications(nickname: string | null) {
             .single();
           if (data) {
             setIsSubscribed(true);
-            setNotifyAll((data as any).notify_all);
-            setNotifyMentions((data as any).notify_mentions);
+            setNotifyAll((data as any).notify_all ?? true);
+            setNotifyMentions((data as any).notify_mentions ?? true);
           }
         }
       } catch {
@@ -50,15 +51,22 @@ export function usePushNotifications(nickname: string | null) {
 
   const subscribe = useCallback(async () => {
     if (!supported || !nickname) return false;
+    setActionLoading(true);
     try {
       // Request notification permission
       const perm = await Notification.requestPermission();
-      if (perm !== "granted") return false;
+      if (perm !== "granted") {
+        setActionLoading(false);
+        return false;
+      }
 
       // Get VAPID public key
       const { data: keyData, error: keyError } =
         await supabase.functions.invoke("setup-vapid");
-      if (keyError || !keyData?.publicKey) return false;
+      if (keyError || !keyData?.publicKey) {
+        setActionLoading(false);
+        return false;
+      }
 
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({
@@ -76,23 +84,28 @@ export function usePushNotifications(nickname: string | null) {
             endpoint: subJson.endpoint,
             p256dh: subJson.keys?.p256dh,
             auth_key: subJson.keys?.auth,
-            notify_all: notifyAll,
-            notify_mentions: notifyMentions,
+            notify_all: true,
+            notify_mentions: true,
           } as any,
           { onConflict: "endpoint" }
         );
 
       if (!error) {
         setIsSubscribed(true);
+        setNotifyAll(true);
+        setNotifyMentions(true);
+        setActionLoading(false);
         return true;
       }
     } catch {
       // ignore
     }
+    setActionLoading(false);
     return false;
-  }, [supported, nickname, notifyAll, notifyMentions]);
+  }, [supported, nickname]);
 
   const unsubscribe = useCallback(async () => {
+    setActionLoading(true);
     try {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
@@ -107,6 +120,7 @@ export function usePushNotifications(nickname: string | null) {
     } catch {
       // ignore
     }
+    setActionLoading(false);
   }, []);
 
   const updatePrefs = useCallback(
@@ -150,6 +164,7 @@ export function usePushNotifications(nickname: string | null) {
     notifyAll,
     notifyMentions,
     loading,
+    actionLoading,
     supported,
     subscribe,
     unsubscribe,
