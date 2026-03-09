@@ -96,7 +96,7 @@ const Room = () => {
   if (!nickname) return null;
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-pc-body">
+    <div className={`flex flex-col h-[100dvh] bg-pc-body ${discoMode ? "disco-mode" : ""}`}>
       {/* Header bar */}
       <div className="shrink-0 flex items-center justify-between px-3 py-2 border-b-2 border-pc-border bg-pc-body">
         <button

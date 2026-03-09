@@ -136,3 +136,13 @@
   color: hsl(var(--pc-text-muted));
   font-family: var(--font-pixel);
 }
+
+/* Disco mode */
+@keyframes disco-bg {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+.disco-mode {
+  animation: disco-bg 2s linear infinite;
+}
