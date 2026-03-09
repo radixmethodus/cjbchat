@@ -70,9 +70,18 @@ const Room = () => {
   const { typingUsers, setTyping } = useTypingPresence(room, nickname);
   const { toggleStar, getStarCount, hasStarred } = useStars(room, nickname);
   const {
-    isSubscribed, notifyAll, notifyMentions, supported: pushSupported, actionLoading: pushLoading,
-    subscribe: pushSubscribe, unsubscribe: pushUnsubscribe, updatePrefs, triggerPush,
+    isSubscribed,
+    notifyAll,
+    notifyMentions,
+    supported: pushSupported,
+    actionLoading: pushLoading,
+    error: pushError,
+    subscribe: pushSubscribe,
+    unsubscribe: pushUnsubscribe,
+    updatePrefs,
+    triggerPush,
   } = usePushNotifications(nickname);
+
 
   const prevCountRef = useRef(0);
 
