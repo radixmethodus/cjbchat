@@ -239,40 +239,53 @@ const Room = () => {
           {pushSupported && (
             <Popover>
               <PopoverTrigger asChild>
-                <button className="text-[10px] font-pixel text-pc-text-muted hover:text-pc-blue transition-all relative">
+                <button
+                  className="text-[10px] font-pixel text-pc-text-muted hover:text-pc-blue transition-all relative"
+                  aria-label="Push notifications"
+                >
                   🔔
                   {isSubscribed && (
-                    <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-green-500" />
+                    <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-pc-blue" />
                   )}
                 </button>
               </PopoverTrigger>
-              <PopoverContent
-                className="w-52 p-3"
-                style={{
-                  background: "var(--pc-body, #c0c0c0)",
-                  border: "2px solid var(--pc-border, #808080)",
-                  borderRadius: "2px",
-                  fontFamily: "'Press Start 2P', monospace",
-                }}
-              >
-                <p className="text-[9px] font-pixel font-bold text-pc-blue mb-3">
+              <PopoverContent className="w-56 p-3 bg-pc-body border-2 border-pc-border rounded-[2px] font-pixel">
+                <p className="text-[9px] font-pixel font-bold text-pc-blue mb-2">
                   Push Notifications
                 </p>
+
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-[8px] font-pixel text-pc-text">
-                      {pushLoading ? "..." : isSubscribed ? "Enabled" : "Disabled"}
+                      {pushLoading
+                        ? "Working…"
+                        : isSubscribed
+                          ? "Enabled"
+                          : "Disabled"}
                     </span>
                     <Switch
                       checked={isSubscribed}
-                      disabled={pushLoading}
+                      disabled={pushLoading || ("Notification" in window && Notification.permission === "denied")}
                       onCheckedChange={async (val) => {
                         if (val) await pushSubscribe();
                         else await pushUnsubscribe();
                       }}
                     />
                   </div>
-                  {isSubscribed && (
+
+                  {"Notification" in window && Notification.permission === "denied" && (
+                    <p className="text-[7px] font-pixel text-pc-text-muted">
+                      Browser blocked notifications — enable in site settings.
+                    </p>
+                  )}
+
+                  {pushError && (
+                    <p className="text-[7px] font-pixel text-destructive">
+                      {pushError.message}
+                    </p>
+                  )}
+
+                  {isSubscribed ? (
                     <>
                       <div className="h-px bg-pc-border my-2" />
                       <p className="text-[7px] font-pixel text-pc-text-muted mb-2">
@@ -282,6 +295,7 @@ const Room = () => {
                         <span className="text-[8px] font-pixel text-pc-text">All messages</span>
                         <Switch
                           checked={notifyAll}
+                          disabled={pushLoading}
                           onCheckedChange={(val) => updatePrefs(val, notifyMentions)}
                         />
                       </div>
@@ -289,6 +303,7 @@ const Room = () => {
                         <span className="text-[8px] font-pixel text-pc-text">@mentions only</span>
                         <Switch
                           checked={notifyMentions}
+                          disabled={pushLoading}
                           onCheckedChange={(val) => updatePrefs(notifyAll, val)}
                         />
                       </div>
@@ -296,16 +311,18 @@ const Room = () => {
                         Tip: type @name to mention
                       </p>
                     </>
-                  )}
-                  {!isSubscribed && !pushLoading && (
-                    <p className="text-[6px] font-pixel text-pc-text-muted">
-                      Get notified when new messages arrive
-                    </p>
+                  ) : (
+                    !pushLoading && (
+                      <p className="text-[6px] font-pixel text-pc-text-muted">
+                        Turn this on to get notified when the app is closed.
+                      </p>
+                    )
                   )}
                 </div>
               </PopoverContent>
             </Popover>
           )}
+
         </div>
       </div>
 

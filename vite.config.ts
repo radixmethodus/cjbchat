@@ -21,6 +21,11 @@ export default defineConfig(({ mode }) => ({
       srcDir: "src",
       filename: "sw.ts",
       registerType: "autoUpdate",
+      // Ensure SW also works in preview/dev so PushManager can subscribe
+      devOptions: {
+        enabled: mode === "development",
+        type: "module",
+      },
       injectManifest: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
       },
@@ -62,3 +67,4 @@ export default defineConfig(({ mode }) => ({
     },
   },
 }));
+
