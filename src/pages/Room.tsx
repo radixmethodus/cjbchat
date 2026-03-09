@@ -22,6 +22,7 @@ const Room = () => {
 
   const room = roomId?.toUpperCase() || "A";
   const { messages, loading, sendMessage, uploadImage } = useRoomMessages(room);
+  const { typingUsers, setTyping } = useTypingPresence(room, nickname);
 
   useEffect(() => {
     if (!nickname) navigate("/");
