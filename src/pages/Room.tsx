@@ -253,6 +253,7 @@ const Room = () => {
           </div>
         )}
 
+        <div className="flex gap-2">
           {/* Image upload button */}
           <button
             onClick={() => fileRef.current?.click()}
@@ -282,7 +283,7 @@ const Room = () => {
             }}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             maxLength={2000}
-            placeholder="Type a message..."
+            placeholder={reportTarget ? "Type your reason..." : "Type a message..."}
             autoComplete="new-password"
             autoCorrect="off"
             autoCapitalize="off"
@@ -300,7 +301,7 @@ const Room = () => {
             disabled={!input.trim() || sending}
             className="px-4 py-2 text-[10px] font-pixel font-bold bg-pc-blue-btn text-primary-foreground border-2 border-pc-blue-dark disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:brightness-90 transition-all"
           >
-            Send
+            {reportTarget ? "Report" : "Send"}
           </button>
         </div>
       </div>
