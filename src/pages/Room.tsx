@@ -86,7 +86,7 @@ const Room = () => {
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }
     if (prevCountRef.current > 0 && messages.length > prevCountRef.current) {
-      playMessageSound();
+      playReceiveSound();
     }
     prevCountRef.current = messages.length;
   }, [messages.length]);
