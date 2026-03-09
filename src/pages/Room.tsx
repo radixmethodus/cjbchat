@@ -5,7 +5,6 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTypingPresence } from "@/hooks/useTypingPresence";
 import MessageBubble, { type PcMessage } from "@/components/pictochat/MessageBubble";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 const playMessageSound = () => {
   try {
@@ -24,6 +23,12 @@ const playMessageSound = () => {
   } catch { /* no audio */ }
 };
 
+type InlineAlert = {
+  id: string;
+  text: string;
+  type: "info" | "error" | "success";
+};
+
 const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
@@ -35,6 +40,7 @@ const Room = () => {
   const [sending, setSending] = useState(false);
   const [discoMode, setDiscoMode] = useState(false);
   const [reportTarget, setReportTarget] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<InlineAlert[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -45,6 +51,14 @@ const Room = () => {
 
   const prevCountRef = useRef(0);
 
+  const showAlert = useCallback((text: string, type: InlineAlert["type"] = "info") => {
+    const id = crypto.randomUUID();
+    setAlerts((prev) => [...prev, { id, text, type }]);
+    setTimeout(() => {
+      setAlerts((prev) => prev.filter((a) => a.id !== id));
+    }, 3500);
+  }, []);
+
   useEffect(() => {
     if (!nickname) navigate("/");
   }, [nickname, navigate]);
@@ -54,7 +68,6 @@ const Room = () => {
     if (el) {
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }
-    // Play sound for new messages (skip initial load)
     if (prevCountRef.current > 0 && messages.length > prevCountRef.current) {
       playMessageSound();
     }
@@ -65,35 +78,32 @@ const Room = () => {
     const trimmed = input.trim();
     if (!trimmed || !nickname || sending) return;
 
-    // Check for /disco command
     if (trimmed.toLowerCase() === "/disco") {
       setDiscoMode((prev) => !prev);
       setInput("");
-      toast.success(discoMode ? "Disco mode OFF" : "🪩 Disco mode ON!");
+      showAlert(discoMode ? "Disco mode OFF" : "🪩 Disco mode ON!", "success");
       return;
     }
 
-    // Check for /report command
     if (trimmed.toLowerCase() === "/report") {
-      toast.error("Usage: /report [nickname]");
+      showAlert("Usage: /report [nickname]", "error");
       setInput("");
       return;
     }
     if (trimmed.toLowerCase().startsWith("/report ")) {
       const target = trimmed.slice(8).trim();
       if (target.toLowerCase() === nickname.toLowerCase()) {
-        toast.error("You can't report yourself!");
+        showAlert("You can't report yourself!", "error");
         setInput("");
         return;
       }
       setReportTarget(target);
       setInput("");
-      toast.info(`Reporting ${target} — type your reason and press Send`);
+      showAlert(`Reporting ${target} — type your reason and press Send`, "info");
       inputRef.current?.focus();
       return;
     }
 
-    // Handle report reason submission
     if (reportTarget) {
       setSending(true);
       const { error } = await supabase.from("complaints" as any).insert({
@@ -103,9 +113,9 @@ const Room = () => {
         reason: trimmed.slice(0, 500),
       } as any);
       if (error) {
-        toast.error("Failed to submit report");
+        showAlert("Failed to submit report", "error");
       } else {
-        toast.success(`Report against ${reportTarget} submitted`);
+        showAlert(`Report against ${reportTarget} submitted`, "success");
       }
       setReportTarget(null);
       setInput("");
@@ -118,7 +128,7 @@ const Room = () => {
     const msgColor = discoMode ? "disco" : color;
     const error = await sendMessage(nickname, trimmed, msgColor, replyTo?.id);
     if (error) {
-      toast.error(error.message || "Failed to send");
+      showAlert(error.message || "Failed to send", "error");
     } else {
       playMessageSound();
       setInput("");
@@ -127,29 +137,29 @@ const Room = () => {
       inputRef.current?.focus();
     }
     setSending(false);
-  }, [input, nickname, color, replyTo, sending, sendMessage, discoMode, reportTarget, room]);
+  }, [input, nickname, color, replyTo, sending, sendMessage, discoMode, reportTarget, room, showAlert]);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !nickname || sending) return;
     if (!file.type.startsWith("image/")) {
-      toast.error("Only images are allowed");
+      showAlert("Only images are allowed", "error");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Max file size is 5MB");
+      showAlert("Max file size is 5MB", "error");
       return;
     }
     setSending(true);
     const { url, error: upError } = await uploadImage(file);
     if (upError || !url) {
-      toast.error("Upload failed");
+      showAlert("Upload failed", "error");
       setSending(false);
       return;
     }
     const error = await sendMessage(nickname, input.trim(), color, replyTo?.id, url, file.type);
     if (error) {
-      toast.error(error.message || "Failed to send");
+      showAlert(error.message || "Failed to send", "error");
     } else {
       setInput("");
       setReplyTo(null);
@@ -157,9 +167,8 @@ const Room = () => {
       inputRef.current?.focus();
     }
     setSending(false);
-    // Reset file input
     if (fileRef.current) fileRef.current.value = "";
-  }, [input, nickname, color, replyTo, sending, sendMessage, uploadImage]);
+  }, [input, nickname, color, replyTo, sending, sendMessage, uploadImage, showAlert]);
 
   const handleReply = useCallback((msg: PcMessage) => {
     setReplyTo(msg);
@@ -167,6 +176,12 @@ const Room = () => {
   }, []);
 
   if (!nickname) return null;
+
+  const alertColors = {
+    info: "text-pc-blue",
+    success: "text-pc-blue",
+    error: "text-destructive",
+  };
 
   return (
     <div className={`flex flex-col h-[100dvh] bg-pc-body ${discoMode ? "disco-mode" : ""}`}>
@@ -220,6 +235,17 @@ const Room = () => {
 
       {/* Bottom screen - input area */}
       <div className="shrink-0 ds-screen-bottom m-1 mt-0 p-3">
+        {/* Inline alerts */}
+        {alerts.map((alert) => (
+          <div
+            key={alert.id}
+            className={`text-[9px] font-pixel ${alertColors[alert.type]} mb-1 animate-fade-in`}
+          >
+            {alert.type === "error" ? "✕ " : alert.type === "success" ? "✓ " : "ℹ "}
+            {alert.text}
+          </div>
+        ))}
+
         {/* Typing indicator */}
         {typingUsers.length > 0 && (
           <div className="text-[8px] font-pixel text-pc-text-muted mb-1 animate-pulse">
