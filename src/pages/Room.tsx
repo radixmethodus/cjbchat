@@ -72,6 +72,47 @@ const Room = () => {
       return;
     }
 
+    // Check for /report command
+    if (trimmed.toLowerCase().startsWith("/report ")) {
+      const target = trimmed.slice(8).trim();
+      if (!target) {
+        toast.error("Usage: /report [nickname]");
+        setInput("");
+        return;
+      }
+      if (target.toLowerCase() === nickname.toLowerCase()) {
+        toast.error("You can't report yourself!");
+        setInput("");
+        return;
+      }
+      setReportTarget(target);
+      setInput("");
+      toast.info(`Reporting ${target} — type your reason and press Send`);
+      inputRef.current?.focus();
+      return;
+    }
+
+    // Handle report reason submission
+    if (reportTarget) {
+      setSending(true);
+      const { error } = await supabase.from("complaints" as any).insert({
+        room,
+        reporter_nickname: nickname,
+        reported_nickname: reportTarget,
+        reason: trimmed.slice(0, 500),
+      } as any);
+      if (error) {
+        toast.error("Failed to submit report");
+      } else {
+        toast.success(`Report against ${reportTarget} submitted`);
+      }
+      setReportTarget(null);
+      setInput("");
+      setSending(false);
+      inputRef.current?.focus();
+      return;
+    }
+
     setSending(true);
     const msgColor = discoMode ? "disco" : color;
     const error = await sendMessage(nickname, trimmed, msgColor, replyTo?.id);
@@ -84,7 +125,7 @@ const Room = () => {
       inputRef.current?.focus();
     }
     setSending(false);
-  }, [input, nickname, color, replyTo, sending, sendMessage, discoMode]);
+  }, [input, nickname, color, replyTo, sending, sendMessage, discoMode, reportTarget, room]);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
