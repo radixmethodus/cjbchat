@@ -188,7 +188,10 @@ const Room = () => {
             name="pc-msg-input"
             id="pc-msg-input"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              setTyping(e.target.value.length > 0);
+            }}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             maxLength={2000}
             placeholder="Type a message..."
