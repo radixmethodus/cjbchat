@@ -249,7 +249,7 @@ const Room = () => {
                   )}
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-56 p-3 bg-pc-body border-2 border-pc-border rounded-[2px] font-pixel">
+              <PopoverContent className="w-56 p-3 bg-pc-body/95 border-2 border-pc-border rounded-[2px] font-pixel shadow-lg">
                 <p className="text-[9px] font-pixel font-bold text-pc-blue mb-2">
                   Push Notifications
                 </p>
@@ -388,7 +388,7 @@ const Room = () => {
             <span>↳ Replying to <strong style={{ color: replyTo.color }}>{replyTo.nickname}</strong></span>
             <button
               onClick={() => setReplyTo(null)}
-              className="text-pc-blue hover:brightness-125"
+              className="text-[14px] text-pc-blue hover:brightness-125 transition-all"
             >
               ✕
             </button>
@@ -401,7 +401,7 @@ const Room = () => {
             <span>⚠ Reporting <strong>{reportTarget}</strong> — type reason below</span>
             <button
               onClick={() => setReportTarget(null)}
-              className="text-pc-blue hover:brightness-125"
+              className="text-[14px] text-pc-blue hover:brightness-125 transition-all"
             >
               ✕
             </button>
