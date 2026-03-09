@@ -4,9 +4,11 @@ import { useRoomMessages } from "@/hooks/useRoomMessages";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTypingPresence } from "@/hooks/useTypingPresence";
 import { useStars } from "@/hooks/useStars";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import MessageBubble, { type PcMessage } from "@/components/pictochat/MessageBubble";
 import { supabase } from "@/integrations/supabase/client";
-
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 const playSendSound = () => {
   try {
     const ctx = new AudioContext();
@@ -67,6 +69,10 @@ const Room = () => {
   const { messages, loading, sendMessage, uploadImage } = useRoomMessages(room);
   const { typingUsers, setTyping } = useTypingPresence(room, nickname);
   const { toggleStar, getStarCount, hasStarred } = useStars(room, nickname);
+  const {
+    isSubscribed, notifyAll, notifyMentions, supported: pushSupported,
+    subscribe: pushSubscribe, unsubscribe: pushUnsubscribe, updatePrefs, triggerPush,
+  } = usePushNotifications(nickname);
 
   const prevCountRef = useRef(0);
 
@@ -150,13 +156,14 @@ const Room = () => {
       showAlert(error.message || "Failed to send", "error");
     } else {
       playSendSound();
+      triggerPush(room, trimmed);
       setInput("");
       setReplyTo(null);
       setTyping(false);
       inputRef.current?.focus();
     }
     setSending(false);
-  }, [input, nickname, color, replyTo, sending, sendMessage, discoMode, reportTarget, room, showAlert]);
+  }, [input, nickname, color, replyTo, sending, sendMessage, discoMode, reportTarget, room, showAlert, triggerPush]);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -180,6 +187,7 @@ const Room = () => {
     if (error) {
       showAlert(error.message || "Failed to send", "error");
     } else {
+      triggerPush(room, input.trim() || "📷 Image", url);
       setInput("");
       setReplyTo(null);
       setTyping(false);
@@ -187,7 +195,7 @@ const Room = () => {
     }
     setSending(false);
     if (fileRef.current) fileRef.current.value = "";
-  }, [input, nickname, color, replyTo, sending, sendMessage, uploadImage, showAlert]);
+  }, [input, nickname, color, replyTo, sending, sendMessage, uploadImage, showAlert, triggerPush, room]);
 
   const handleReply = useCallback((msg: PcMessage) => {
     setReplyTo(msg);
@@ -215,9 +223,71 @@ const Room = () => {
         <span className="text-xs font-pixel font-bold text-pc-blue">
           Chat Room {room}
         </span>
-        <span className="text-[8px] font-pixel text-pc-text-muted">
-          {messages.length} msgs
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[8px] font-pixel text-pc-text-muted">
+            {messages.length} msgs
+          </span>
+          {pushSupported && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="text-[10px] font-pixel text-pc-text-muted hover:text-pc-blue transition-all relative">
+                  🔔
+                  {isSubscribed && (
+                    <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-green-500" />
+                  )}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-52 p-3"
+                style={{
+                  background: "var(--pc-body, #c0c0c0)",
+                  border: "2px solid var(--pc-border, #808080)",
+                  borderRadius: "2px",
+                  fontFamily: "'Press Start 2P', monospace",
+                }}
+              >
+                <p className="text-[9px] font-pixel font-bold text-pc-blue mb-3">
+                  Push Notifications
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[8px] font-pixel text-pc-text">
+                      {isSubscribed ? "Enabled" : "Disabled"}
+                    </span>
+                    <Switch
+                      checked={isSubscribed}
+                      onCheckedChange={async (val) => {
+                        if (val) await pushSubscribe();
+                        else await pushUnsubscribe();
+                      }}
+                    />
+                  </div>
+                  {isSubscribed && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[8px] font-pixel text-pc-text">All messages</span>
+                        <Switch
+                          checked={notifyAll}
+                          onCheckedChange={(val) => updatePrefs(val, notifyMentions)}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[8px] font-pixel text-pc-text">@mentions</span>
+                        <Switch
+                          checked={notifyMentions}
+                          onCheckedChange={(val) => updatePrefs(notifyAll, val)}
+                        />
+                      </div>
+                      <p className="text-[7px] font-pixel text-pc-text-muted">
+                        Use @nickname to mention someone
+                      </p>
+                    </>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
       </div>
 
       {/* Top screen - message list */}
