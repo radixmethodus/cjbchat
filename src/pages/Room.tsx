@@ -223,9 +223,71 @@ const Room = () => {
         <span className="text-xs font-pixel font-bold text-pc-blue">
           Chat Room {room}
         </span>
-        <span className="text-[8px] font-pixel text-pc-text-muted">
-          {messages.length} msgs
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[8px] font-pixel text-pc-text-muted">
+            {messages.length} msgs
+          </span>
+          {pushSupported && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="text-[10px] font-pixel text-pc-text-muted hover:text-pc-blue transition-all relative">
+                  🔔
+                  {isSubscribed && (
+                    <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-green-500" />
+                  )}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-52 p-3"
+                style={{
+                  background: "var(--pc-body, #c0c0c0)",
+                  border: "2px solid var(--pc-border, #808080)",
+                  borderRadius: "2px",
+                  fontFamily: "'Press Start 2P', monospace",
+                }}
+              >
+                <p className="text-[9px] font-pixel font-bold text-pc-blue mb-3">
+                  Push Notifications
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[8px] font-pixel text-pc-text">
+                      {isSubscribed ? "Enabled" : "Disabled"}
+                    </span>
+                    <Switch
+                      checked={isSubscribed}
+                      onCheckedChange={async (val) => {
+                        if (val) await pushSubscribe();
+                        else await pushUnsubscribe();
+                      }}
+                    />
+                  </div>
+                  {isSubscribed && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[8px] font-pixel text-pc-text">All messages</span>
+                        <Switch
+                          checked={notifyAll}
+                          onCheckedChange={(val) => updatePrefs(val, notifyMentions)}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[8px] font-pixel text-pc-text">@mentions</span>
+                        <Switch
+                          checked={notifyMentions}
+                          onCheckedChange={(val) => updatePrefs(notifyAll, val)}
+                        />
+                      </div>
+                      <p className="text-[7px] font-pixel text-pc-text-muted">
+                        Use @nickname to mention someone
+                      </p>
+                    </>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
       </div>
 
       {/* Top screen - message list */}
