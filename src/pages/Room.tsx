@@ -36,6 +36,15 @@ const Room = () => {
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
     if (!trimmed || !nickname || sending) return;
+
+    // Check for /disco command
+    if (trimmed.toLowerCase() === "/disco") {
+      setDiscoMode((prev) => !prev);
+      setInput("");
+      toast.success(discoMode ? "Disco mode OFF" : "🪩 Disco mode ON!");
+      return;
+    }
+
     setSending(true);
     const error = await sendMessage(nickname, trimmed, color, replyTo?.id);
     if (error) {
@@ -46,7 +55,7 @@ const Room = () => {
       inputRef.current?.focus();
     }
     setSending(false);
-  }, [input, nickname, color, replyTo, sending, sendMessage]);
+  }, [input, nickname, color, replyTo, sending, sendMessage, discoMode]);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
