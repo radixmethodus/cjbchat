@@ -4,6 +4,7 @@ import { useRoomMessages } from "@/hooks/useRoomMessages";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTypingPresence } from "@/hooks/useTypingPresence";
 import MessageBubble, { type PcMessage } from "@/components/pictochat/MessageBubble";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const playMessageSound = () => {
