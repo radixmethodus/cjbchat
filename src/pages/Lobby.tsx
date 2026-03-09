@@ -7,7 +7,7 @@ const ROOMS = ["A", "B", "C", "D"] as const;
 
 const Lobby = () => {
   const [nickname, setNickname] = useState(
-    () => sessionStorage.getItem("pc_nickname") || ""
+    () => sessionStorage.getItem("pc_nickname") || localStorage.getItem("pc_last_nickname") || ""
   );
   const [selectedRoom, setSelectedRoom] = useState<string>("A");
   const navigate = useNavigate();
@@ -18,6 +18,7 @@ const Lobby = () => {
     const trimmed = nickname.trim();
     if (!trimmed || trimmed.length > 20) return;
     sessionStorage.setItem("pc_nickname", trimmed);
+    localStorage.setItem("pc_last_nickname", trimmed);
     navigate(`/room/${selectedRoom}`);
   };
 
