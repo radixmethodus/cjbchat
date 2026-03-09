@@ -147,7 +147,7 @@ const Room = () => {
     if (error) {
       showAlert(error.message || "Failed to send", "error");
     } else {
-      playMessageSound();
+      playSendSound();
       setInput("");
       setReplyTo(null);
       setTyping(false);
