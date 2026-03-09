@@ -56,8 +56,12 @@ const MessageBubble = forwardRef<HTMLDivElement, Props>(
         {/* Bubble - use div instead of button to avoid nested button issues */}
         <div
           onClick={() => onReply(message)}
-          className={`pc-bubble ${isOwn ? "pc-bubble-own" : ""} px-3 py-2 max-w-[80%] text-left cursor-pointer hover:brightness-95 transition-all`}
-          title="Click to reply"
+          onDoubleClick={(e) => {
+            e.preventDefault();
+            onToggleStar(message.id);
+          }}
+          className={`pc-bubble ${isOwn ? "pc-bubble-own" : ""} px-3 py-2 max-w-[80%] text-left cursor-pointer hover:brightness-95 transition-all select-none`}
+          title="Click to reply · Double-click to ⭐"
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {
@@ -67,7 +71,7 @@ const MessageBubble = forwardRef<HTMLDivElement, Props>(
             }
           }}
         >
-        {message.content && (
+          {message.content && (
             <p className={`text-[13px] font-pixel break-words whitespace-pre-wrap leading-relaxed ${message.color === "disco" ? "disco-text" : "text-pc-text"}`}>
               {message.content}
             </p>
@@ -75,10 +79,23 @@ const MessageBubble = forwardRef<HTMLDivElement, Props>(
           {hasImage && <ImageLightbox src={message.file_url!} />}
         </div>
 
-        {/* Timestamp */}
-        <span className="text-[8px] font-pixel text-pc-text-muted mt-0.5 px-1">
-          {time}
-        </span>
+        {/* Star count + Timestamp */}
+        <div className="flex items-center gap-1.5 mt-0.5 px-1">
+          {starCount > 0 && (
+            <button
+              onClick={() => onToggleStar(message.id)}
+              className={`text-[9px] font-pixel flex items-center gap-0.5 transition-all hover:brightness-125 ${
+                hasStarred ? "text-yellow-400" : "text-pc-text-muted"
+              }`}
+              title={hasStarred ? "Unstar" : "Star"}
+            >
+              ⭐ {starCount}
+            </button>
+          )}
+          <span className="text-[8px] font-pixel text-pc-text-muted">
+            {time}
+          </span>
+        </div>
       </div>
     );
   }

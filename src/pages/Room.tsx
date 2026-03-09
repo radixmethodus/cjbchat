@@ -242,6 +242,9 @@ const Room = () => {
                   isOwn={msg.nickname === nickname}
                   showName={showName}
                   onReply={handleReply}
+                  starCount={getStarCount(msg.id)}
+                  hasStarred={hasStarred(msg.id)}
+                  onToggleStar={toggleStar}
                 />
               );
             })
