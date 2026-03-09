@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useRoomMessages } from "@/hooks/useRoomMessages";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useTypingPresence } from "@/hooks/useTypingPresence";
+import { useTypingPresence, type PresenceEvent } from "@/hooks/useTypingPresence";
 import MessageBubble, { type PcMessage } from "@/components/pictochat/MessageBubble";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -41,7 +41,7 @@ const Room = () => {
 
   const room = roomId?.toUpperCase() || "A";
   const { messages, loading, sendMessage, uploadImage } = useRoomMessages(room);
-  const { typingUsers, setTyping } = useTypingPresence(room, nickname);
+  const { typingUsers, presenceEvents, setTyping } = useTypingPresence(room, nickname);
 
   const prevCountRef = useRef(0);
 
@@ -59,7 +59,7 @@ const Room = () => {
       playMessageSound();
     }
     prevCountRef.current = messages.length;
-  }, [messages.length]);
+  }, [messages.length, presenceEvents.length]);
 
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
@@ -197,19 +197,49 @@ const Room = () => {
               No messages yet. Say something!
             </p>
           ) : (
-            messages.map((msg, i) => {
-              const prev = messages[i - 1];
-              const showName = !prev || prev.nickname !== msg.nickname;
-              return (
-                <MessageBubble
-                  key={msg.id}
-                  message={msg}
-                  isOwn={msg.nickname === nickname}
-                  showName={showName}
-                  onReply={handleReply}
-                />
-              );
-            })
+            (() => {
+              // Merge messages and presence events into a single timeline
+              type TimelineItem =
+                | { kind: "msg"; data: PcMessage }
+                | { kind: "event"; data: PresenceEvent };
+
+              const timeline: TimelineItem[] = [
+                ...messages.map((m) => ({ kind: "msg" as const, data: m })),
+                ...presenceEvents.map((e) => ({ kind: "event" as const, data: e })),
+              ].sort((a, b) => {
+                const tA = a.kind === "msg" ? new Date(a.data.created_at).getTime() : a.data.timestamp;
+                const tB = b.kind === "msg" ? new Date(b.data.created_at).getTime() : b.data.timestamp;
+                return tA - tB;
+              });
+
+              let prevNickname: string | null = null;
+              return timeline.map((item) => {
+                if (item.kind === "event") {
+                  prevNickname = null;
+                  const e = item.data;
+                  return (
+                    <div
+                      key={e.id}
+                      className="text-center text-[8px] font-pixel text-pc-text-muted my-2 opacity-60"
+                    >
+                      {e.type === "join" ? `▸ ${e.nickname} joined` : `◂ ${e.nickname} left`}
+                    </div>
+                  );
+                }
+                const msg = item.data;
+                const showName = prevNickname !== msg.nickname;
+                prevNickname = msg.nickname;
+                return (
+                  <MessageBubble
+                    key={msg.id}
+                    message={msg}
+                    isOwn={msg.nickname === nickname}
+                    showName={showName}
+                    onReply={handleReply}
+                  />
+                );
+              });
+            })()
           )}
         </div>
       </div>

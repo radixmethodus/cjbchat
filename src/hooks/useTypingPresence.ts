@@ -1,15 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const TYPING_TIMEOUT = 3000; // Stop showing "typing" after 3s of inactivity
+const TYPING_TIMEOUT = 3000;
+
+export type PresenceEvent = {
+  id: string;
+  type: "join" | "leave";
+  nickname: string;
+  timestamp: number;
+};
 
 export function useTypingPresence(room: string, nickname: string | null) {
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [presenceEvents, setPresenceEvents] = useState<PresenceEvent[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialSyncDone = useRef(false);
 
   useEffect(() => {
     if (!nickname) return;
+    initialSyncDone.current = false;
 
     const channel = supabase.channel(`typing:${room}`, {
       config: { presence: { key: nickname } },
@@ -23,6 +33,21 @@ export function useTypingPresence(room: string, nickname: string | null) {
           return entries.some((e) => e.typing) && n !== nickname;
         });
         setTypingUsers(users);
+        initialSyncDone.current = true;
+      })
+      .on("presence", { event: "join" }, ({ key }) => {
+        if (!initialSyncDone.current || key === nickname) return;
+        setPresenceEvents((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), type: "join", nickname: key, timestamp: Date.now() },
+        ]);
+      })
+      .on("presence", { event: "leave" }, ({ key }) => {
+        if (!initialSyncDone.current || key === nickname) return;
+        setPresenceEvents((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), type: "leave", nickname: key, timestamp: Date.now() },
+        ]);
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
@@ -35,6 +60,7 @@ export function useTypingPresence(room: string, nickname: string | null) {
     return () => {
       channel.unsubscribe();
       channelRef.current = null;
+      initialSyncDone.current = false;
     };
   }, [room, nickname]);
 
@@ -56,5 +82,5 @@ export function useTypingPresence(room: string, nickname: string | null) {
     []
   );
 
-  return { typingUsers, setTyping };
+  return { typingUsers, presenceEvents, setTyping };
 }
