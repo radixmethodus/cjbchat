@@ -5,19 +5,12 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import MessageBubble, { type PcMessage } from "@/components/pictochat/MessageBubble";
 import { toast } from "sonner";
 
-const COLORS = ["#0066CC", "#E03030", "#3080E0", "#E0A000", "#B040D0", "#E07020", "#20B0B0", "#808080"];
-
 const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const nickname = sessionStorage.getItem("pc_nickname");
-  const [color] = useState(() => {
-    const saved = sessionStorage.getItem("pc_color");
-    if (saved) return saved;
-    const c = COLORS[Math.floor(Math.random() * COLORS.length)];
-    sessionStorage.setItem("pc_color", c);
-    return c;
-  });
+  const { selected: themeColor } = useThemeColor();
+  const color = `hsl(${themeColor.hue}, ${themeColor.sat}%, 45%)`;
   const [input, setInput] = useState("");
   const [replyTo, setReplyTo] = useState<PcMessage | null>(null);
   const [sending, setSending] = useState(false);
@@ -27,7 +20,6 @@ const Room = () => {
 
   const room = roomId?.toUpperCase() || "A";
   const { messages, loading, sendMessage, uploadImage } = useRoomMessages(room);
-  useThemeColor();
 
   useEffect(() => {
     if (!nickname) navigate("/");
