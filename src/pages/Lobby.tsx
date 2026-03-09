@@ -12,6 +12,7 @@ const Lobby = () => {
   const [selectedRoom, setSelectedRoom] = useState<string>("A");
   const navigate = useNavigate();
   const { selected: themeColor, setSelected: setThemeColor } = useThemeColor();
+  const { data: roomStats } = useRoomStats();
 
   const handleEnter = () => {
     const trimmed = nickname.trim();
