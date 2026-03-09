@@ -21,6 +21,9 @@ type Props = {
   isOwn: boolean;
   showName: boolean;
   onReply: (msg: PcMessage) => void;
+  starCount: number;
+  hasStarred: boolean;
+  onToggleStar: (messageId: string) => void;
 };
 
 const MessageBubble = forwardRef<HTMLDivElement, Props>(
