@@ -10,6 +10,30 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return Uint8Array.from(rawData, (c) => c.charCodeAt(0));
 }
 
+type PushErrorCode =
+  | "not_supported"
+  | "permission_denied"
+  | "service_worker_not_ready"
+  | "vapid_unavailable"
+  | "subscribe_failed"
+  | "unknown";
+
+type PushError = { code: PushErrorCode; message: string };
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function getRegistrationWithRetry(): Promise<ServiceWorkerRegistration | null> {
+  // registerSW() should register quickly, but it may take a tick to appear.
+  for (let i = 0; i < 8; i++) {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (reg) return reg;
+    await sleep(250);
+  }
+  // Fallback: any registration (older or uncontrolled)
+  const regs = await navigator.serviceWorker.getRegistrations();
+  return regs[0] ?? null;
+}
+
 export function usePushNotifications(nickname: string | null) {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [notifyAll, setNotifyAll] = useState(true);
@@ -17,46 +41,80 @@ export function usePushNotifications(nickname: string | null) {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [supported, setSupported] = useState(false);
+  const [error, setError] = useState<PushError | null>(null);
 
   useEffect(() => {
-    const ok = "serviceWorker" in navigator && "PushManager" in window;
+    const ok =
+      typeof window !== "undefined" &&
+      "serviceWorker" in navigator &&
+      "PushManager" in window &&
+      "Notification" in window;
+
     setSupported(ok);
+    setError(null);
+
     if (!ok || !nickname) {
       setLoading(false);
       return;
     }
 
+    let cancelled = false;
+
     (async () => {
+      setLoading(true);
       try {
-        const reg = await navigator.serviceWorker.ready;
+        const reg = await getRegistrationWithRetry();
+        if (!reg) {
+          if (!cancelled) {
+            setError({
+              code: "service_worker_not_ready",
+              message: "Service worker is still starting — try again in a moment.",
+            });
+          }
+          return;
+        }
+
         const sub = await reg.pushManager.getSubscription();
-        if (sub) {
+        if (!cancelled && sub) {
           const { data } = await supabase
             .from("push_subscriptions" as any)
-            .select("*")
+            .select("notify_all, notify_mentions")
             .eq("endpoint", sub.endpoint)
-            .single();
-          if (data) {
-            setIsSubscribed(true);
-            setNotifyAll((data as any).notify_all ?? true);
-            setNotifyMentions((data as any).notify_mentions ?? true);
-          }
+            .maybeSingle();
+
+          setIsSubscribed(true);
+          setNotifyAll((data as any)?.notify_all ?? true);
+          setNotifyMentions((data as any)?.notify_mentions ?? true);
+        }
+
+        if (!cancelled && !sub) {
+          setIsSubscribed(false);
         }
       } catch {
         // ignore
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setLoading(false);
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [nickname]);
 
   const subscribe = useCallback(async () => {
     if (!supported || !nickname) return false;
+    setError(null);
     setActionLoading(true);
+
     try {
       // Request notification permission
       const perm = await Notification.requestPermission();
       if (perm !== "granted") {
-        setActionLoading(false);
+        setError({
+          code: "permission_denied",
+          message: "Notifications are blocked in browser settings.",
+        });
         return false;
       }
 
@@ -64,19 +122,31 @@ export function usePushNotifications(nickname: string | null) {
       const { data: keyData, error: keyError } =
         await supabase.functions.invoke("setup-vapid");
       if (keyError || !keyData?.publicKey) {
-        setActionLoading(false);
+        setError({
+          code: "vapid_unavailable",
+          message: "Push keys unavailable — try again in a moment.",
+        });
         return false;
       }
 
-      const reg = await navigator.serviceWorker.ready;
+      const reg = await getRegistrationWithRetry();
+      if (!reg) {
+        setError({
+          code: "service_worker_not_ready",
+          message: "Service worker is still starting — try again in a moment.",
+        });
+        return false;
+      }
+
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(keyData.publicKey).buffer as ArrayBuffer,
+        applicationServerKey: urlBase64ToUint8Array(keyData.publicKey)
+          .buffer as ArrayBuffer,
       });
 
       const subJson = sub.toJSON();
 
-      const { error } = await supabase
+      const { error: upsertError } = await supabase
         .from("push_subscriptions" as any)
         .upsert(
           {
@@ -90,25 +160,33 @@ export function usePushNotifications(nickname: string | null) {
           { onConflict: "endpoint" }
         );
 
-      if (!error) {
-        setIsSubscribed(true);
-        setNotifyAll(true);
-        setNotifyMentions(true);
-        setActionLoading(false);
-        return true;
+      if (upsertError) {
+        setError({
+          code: "subscribe_failed",
+          message: "Could not save subscription — try again.",
+        });
+        return false;
       }
+
+      setIsSubscribed(true);
+      setNotifyAll(true);
+      setNotifyMentions(true);
+      return true;
     } catch {
-      // ignore
+      setError({ code: "unknown", message: "Push subscription failed." });
+      return false;
+    } finally {
+      setActionLoading(false);
     }
-    setActionLoading(false);
-    return false;
   }, [supported, nickname]);
 
   const unsubscribe = useCallback(async () => {
+    setError(null);
     setActionLoading(true);
+
     try {
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.getSubscription();
+      const reg = await getRegistrationWithRetry();
+      const sub = await reg?.pushManager.getSubscription();
       if (sub) {
         await supabase
           .from("push_subscriptions" as any)
@@ -119,8 +197,9 @@ export function usePushNotifications(nickname: string | null) {
       setIsSubscribed(false);
     } catch {
       // ignore
+    } finally {
+      setActionLoading(false);
     }
-    setActionLoading(false);
   }, []);
 
   const updatePrefs = useCallback(
@@ -128,9 +207,10 @@ export function usePushNotifications(nickname: string | null) {
       setNotifyAll(all);
       setNotifyMentions(mentions);
       if (!isSubscribed) return;
+
       try {
-        const reg = await navigator.serviceWorker.ready;
-        const sub = await reg.pushManager.getSubscription();
+        const reg = await getRegistrationWithRetry();
+        const sub = await reg?.pushManager.getSubscription();
         if (sub) {
           await supabase
             .from("push_subscriptions" as any)
@@ -166,6 +246,7 @@ export function usePushNotifications(nickname: string | null) {
     loading,
     actionLoading,
     supported,
+    error,
     subscribe,
     unsubscribe,
     updatePrefs,
