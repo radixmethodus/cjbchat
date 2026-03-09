@@ -42,6 +42,8 @@ const Room = () => {
   const { messages, loading, sendMessage, uploadImage } = useRoomMessages(room);
   const { typingUsers, setTyping } = useTypingPresence(room, nickname);
 
+  const prevCountRef = useRef(0);
+
   useEffect(() => {
     if (!nickname) navigate("/");
   }, [nickname, navigate]);
@@ -51,6 +53,11 @@ const Room = () => {
     if (el) {
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }
+    // Play sound for new messages (skip initial load)
+    if (prevCountRef.current > 0 && messages.length > prevCountRef.current) {
+      playMessageSound();
+    }
+    prevCountRef.current = messages.length;
   }, [messages.length]);
 
   const handleSend = useCallback(async () => {
