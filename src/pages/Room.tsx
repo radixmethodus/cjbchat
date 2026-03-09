@@ -22,7 +22,6 @@ const playMessageSound = () => {
     osc.stop(ctx.currentTime + 0.15);
   } catch { /* no audio */ }
 };
-import { toast } from "sonner";
 
 const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
