@@ -74,13 +74,13 @@ const Room = () => {
     }
 
     // Check for /report command
+    if (trimmed.toLowerCase() === "/report") {
+      toast.error("Usage: /report [nickname]");
+      setInput("");
+      return;
+    }
     if (trimmed.toLowerCase().startsWith("/report ")) {
       const target = trimmed.slice(8).trim();
-      if (!target) {
-        toast.error("Usage: /report [nickname]");
-        setInput("");
-        return;
-      }
       if (target.toLowerCase() === nickname.toLowerCase()) {
         toast.error("You can't report yourself!");
         setInput("");
