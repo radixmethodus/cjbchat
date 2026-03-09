@@ -34,26 +34,30 @@ const Lobby = () => {
 
         {/* Room list - DS top screen */}
         <div className="ds-screen p-3 mb-0">
-          <div className="space-y-2">
+          <div className="space-y-1">
             {ROOMS.map((room) => (
               <button
                 key={room}
                 onClick={() => setSelectedRoom(room)}
-                className={`room-card w-full flex items-center gap-3 px-3 py-2 border-2 text-left ${
+                className={`room-card w-full flex items-center gap-2 px-2 py-2.5 border text-left transition-colors ${
                   selectedRoom === room ? "selected" : ""
                 }`}
                 style={{
-                  borderColor:
+                  borderColor: "hsl(var(--pc-border))",
+                  backgroundColor:
                     selectedRoom === room
-                      ? "hsl(var(--pc-blue))"
-                      : "hsl(var(--pc-border))",
+                      ? "hsl(var(--pc-blue) / 0.15)"
+                      : "transparent",
                 }}
               >
-                <span className="text-xs font-pixel font-bold text-pc-blue">
+                <span className="text-sm font-pixel font-bold" style={{ color: "hsl(var(--pc-blue))" }}>
                   ▶
                 </span>
-                <span className="text-xs font-pixel text-pc-text">
+                <span className="text-xs font-pixel text-pc-text flex-1">
                   Chat Room {room}
+                </span>
+                <span className="text-[10px] font-pixel text-pc-text-muted">
+                  0/16
                 </span>
               </button>
             ))}
