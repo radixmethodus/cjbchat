@@ -7,47 +7,28 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS")
-    return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { room, nickname, content, file_url } = await req.json();
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     // Get VAPID keys
-    const { data: config } = await supabase
-      .from("push_config")
-      .select("*")
-      .eq("id", 1)
-      .single();
+    const { data: config } = await supabase.from("push_config").select("*").eq("id", 1).single();
 
     if (!config) {
-      return new Response(
-        JSON.stringify({ error: "VAPID not configured" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "VAPID not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    webpush.setVapidDetails(
-      "mailto:push@cjbchat.lovable.app",
-      config.public_key,
-      config.private_key
-    );
+    webpush.setVapidDetails("mailto:push@cjbchat.lovable.app", config.public_key, config.private_key);
 
     // Get all subscriptions except sender's
-    const { data: subs } = await supabase
-      .from("push_subscriptions")
-      .select("*")
-      .neq("nickname", nickname);
+    const { data: subs } = await supabase.from("push_subscriptions").select("*").neq("nickname", nickname);
 
     if (!subs || subs.length === 0) {
       return new Response(JSON.stringify({ sent: 0 }), {
@@ -57,7 +38,7 @@ Deno.serve(async (req) => {
 
     const body = content || (file_url ? "📷 Image" : "New message");
     const payload = JSON.stringify({
-      title: `${nickname} in Room ${room}`,
+      title: `[Room ${room}]${nickname} says...`,
       body: body.length > 100 ? body.slice(0, 100) + "…" : body,
       url: `/room/${room.toLowerCase()}`,
     });
@@ -76,7 +57,7 @@ Deno.serve(async (req) => {
             endpoint: sub.endpoint,
             keys: { p256dh: sub.p256dh, auth: sub.auth_key },
           },
-          payload
+          payload,
         );
         sent++;
       } catch (err: any) {
