@@ -84,6 +84,7 @@ const Room = () => {
     } else {
       setInput("");
       setReplyTo(null);
+      setTyping(false);
       inputRef.current?.focus();
     }
     setSending(false);
