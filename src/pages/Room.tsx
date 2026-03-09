@@ -59,7 +59,7 @@ const Room = () => {
       playMessageSound();
     }
     prevCountRef.current = messages.length;
-  }, [messages.length]);
+  }, [messages.length, presenceEvents.length]);
 
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
