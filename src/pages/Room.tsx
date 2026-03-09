@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useRoomMessages } from "@/hooks/useRoomMessages";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useTypingPresence } from "@/hooks/useTypingPresence";
+import { useTypingPresence, type PresenceEvent } from "@/hooks/useTypingPresence";
 import MessageBubble, { type PcMessage } from "@/components/pictochat/MessageBubble";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
