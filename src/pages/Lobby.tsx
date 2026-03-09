@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useThemeColor, THEME_COLORS } from "@/hooks/useThemeColor";
+import { useRoomStats } from "@/hooks/useRoomStats";
 
 const ROOMS = ["A", "B", "C", "D"] as const;
 
