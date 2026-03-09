@@ -41,7 +41,7 @@ const Room = () => {
 
   const room = roomId?.toUpperCase() || "A";
   const { messages, loading, sendMessage, uploadImage } = useRoomMessages(room);
-  const { typingUsers, setTyping } = useTypingPresence(room, nickname);
+  const { typingUsers, presenceEvents, setTyping } = useTypingPresence(room, nickname);
 
   const prevCountRef = useRef(0);
 
