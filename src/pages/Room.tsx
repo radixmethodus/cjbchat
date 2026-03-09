@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useRoomMessages } from "@/hooks/useRoomMessages";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTypingPresence } from "@/hooks/useTypingPresence";
+import { useStars } from "@/hooks/useStars";
 import MessageBubble, { type PcMessage } from "@/components/pictochat/MessageBubble";
 import { supabase } from "@/integrations/supabase/client";
 
