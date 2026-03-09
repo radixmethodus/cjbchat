@@ -240,7 +240,19 @@ const Room = () => {
           </div>
         )}
 
-        <div className="flex gap-2">
+        {/* Report reason prompt */}
+        {reportTarget && (
+          <div className="flex items-center gap-2 mb-2 text-[8px] font-pixel text-destructive">
+            <span>⚠ Reporting <strong>{reportTarget}</strong> — type reason below</span>
+            <button
+              onClick={() => setReportTarget(null)}
+              className="text-pc-blue hover:brightness-125"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
           {/* Image upload button */}
           <button
             onClick={() => fileRef.current?.click()}
