@@ -38,6 +38,33 @@ export type Database = {
         }
         Relationships: []
       }
+      complaints: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string
+          reported_nickname: string
+          reporter_nickname: string
+          room: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason: string
+          reported_nickname: string
+          reporter_nickname: string
+          room: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string
+          reported_nickname?: string
+          reporter_nickname?: string
+          room?: string
+        }
+        Relationships: []
+      }
       login_attempts: {
         Row: {
           attempt_at: string

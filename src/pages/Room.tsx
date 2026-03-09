@@ -4,6 +4,7 @@ import { useRoomMessages } from "@/hooks/useRoomMessages";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTypingPresence } from "@/hooks/useTypingPresence";
 import MessageBubble, { type PcMessage } from "@/components/pictochat/MessageBubble";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const playMessageSound = () => {
@@ -33,6 +34,7 @@ const Room = () => {
   const [replyTo, setReplyTo] = useState<PcMessage | null>(null);
   const [sending, setSending] = useState(false);
   const [discoMode, setDiscoMode] = useState(false);
+  const [reportTarget, setReportTarget] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -71,6 +73,47 @@ const Room = () => {
       return;
     }
 
+    // Check for /report command
+    if (trimmed.toLowerCase().startsWith("/report ")) {
+      const target = trimmed.slice(8).trim();
+      if (!target) {
+        toast.error("Usage: /report [nickname]");
+        setInput("");
+        return;
+      }
+      if (target.toLowerCase() === nickname.toLowerCase()) {
+        toast.error("You can't report yourself!");
+        setInput("");
+        return;
+      }
+      setReportTarget(target);
+      setInput("");
+      toast.info(`Reporting ${target} — type your reason and press Send`);
+      inputRef.current?.focus();
+      return;
+    }
+
+    // Handle report reason submission
+    if (reportTarget) {
+      setSending(true);
+      const { error } = await supabase.from("complaints" as any).insert({
+        room,
+        reporter_nickname: nickname,
+        reported_nickname: reportTarget,
+        reason: trimmed.slice(0, 500),
+      } as any);
+      if (error) {
+        toast.error("Failed to submit report");
+      } else {
+        toast.success(`Report against ${reportTarget} submitted`);
+      }
+      setReportTarget(null);
+      setInput("");
+      setSending(false);
+      inputRef.current?.focus();
+      return;
+    }
+
     setSending(true);
     const msgColor = discoMode ? "disco" : color;
     const error = await sendMessage(nickname, trimmed, msgColor, replyTo?.id);
@@ -83,7 +126,7 @@ const Room = () => {
       inputRef.current?.focus();
     }
     setSending(false);
-  }, [input, nickname, color, replyTo, sending, sendMessage, discoMode]);
+  }, [input, nickname, color, replyTo, sending, sendMessage, discoMode, reportTarget, room]);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -197,6 +240,19 @@ const Room = () => {
           </div>
         )}
 
+        {/* Report reason prompt */}
+        {reportTarget && (
+          <div className="flex items-center gap-2 mb-2 text-[8px] font-pixel text-destructive">
+            <span>⚠ Reporting <strong>{reportTarget}</strong> — type reason below</span>
+            <button
+              onClick={() => setReportTarget(null)}
+              className="text-pc-blue hover:brightness-125"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         <div className="flex gap-2">
           {/* Image upload button */}
           <button
@@ -227,7 +283,7 @@ const Room = () => {
             }}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             maxLength={2000}
-            placeholder="Type a message..."
+            placeholder={reportTarget ? "Type your reason..." : "Type a message..."}
             autoComplete="new-password"
             autoCorrect="off"
             autoCapitalize="off"
@@ -245,7 +301,7 @@ const Room = () => {
             disabled={!input.trim() || sending}
             className="px-4 py-2 text-[10px] font-pixel font-bold bg-pc-blue-btn text-primary-foreground border-2 border-pc-blue-dark disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:brightness-90 transition-all"
           >
-            Send
+            {reportTarget ? "Report" : "Send"}
           </button>
         </div>
       </div>
