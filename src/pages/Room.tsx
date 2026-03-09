@@ -187,6 +187,7 @@ const Room = () => {
     if (error) {
       showAlert(error.message || "Failed to send", "error");
     } else {
+      triggerPush(room, input.trim() || "📷 Image", url);
       setInput("");
       setReplyTo(null);
       setTyping(false);
@@ -194,7 +195,7 @@ const Room = () => {
     }
     setSending(false);
     if (fileRef.current) fileRef.current.value = "";
-  }, [input, nickname, color, replyTo, sending, sendMessage, uploadImage, showAlert]);
+  }, [input, nickname, color, replyTo, sending, sendMessage, uploadImage, showAlert, triggerPush, room]);
 
   const handleReply = useCallback((msg: PcMessage) => {
     setReplyTo(msg);
