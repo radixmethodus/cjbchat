@@ -57,7 +57,7 @@ function applyTheme(hue: number, sat: number) {
 
 export function useThemeColor() {
   const [selected, setSelected] = useState<ThemeColor>(() => {
-    const saved = sessionStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const found = THEME_COLORS.find((c) => c.hue === Number(saved));
       if (found) return found;
