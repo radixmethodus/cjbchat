@@ -120,6 +120,7 @@ const Room = () => {
     if (error) {
       toast.error(error.message || "Failed to send");
     } else {
+      playMessageSound();
       setInput("");
       setReplyTo(null);
       setTyping(false);
