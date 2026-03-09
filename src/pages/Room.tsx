@@ -20,7 +20,6 @@ const Room = () => {
 
   const room = roomId?.toUpperCase() || "A";
   const { messages, loading, sendMessage, uploadImage } = useRoomMessages(room);
-  useThemeColor();
 
   useEffect(() => {
     if (!nickname) navigate("/");
