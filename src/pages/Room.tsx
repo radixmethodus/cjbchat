@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useRoomMessages } from "@/hooks/useRoomMessages";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTypingPresence } from "@/hooks/useTypingPresence";
+import { useStars } from "@/hooks/useStars";
 import MessageBubble, { type PcMessage } from "@/components/pictochat/MessageBubble";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -65,6 +66,7 @@ const Room = () => {
   const room = roomId?.toUpperCase() || "A";
   const { messages, loading, sendMessage, uploadImage } = useRoomMessages(room);
   const { typingUsers, setTyping } = useTypingPresence(room, nickname);
+  const { toggleStar, getStarCount, hasStarred } = useStars(room, nickname);
 
   const prevCountRef = useRef(0);
 
@@ -240,6 +242,9 @@ const Room = () => {
                   isOwn={msg.nickname === nickname}
                   showName={showName}
                   onReply={handleReply}
+                  starCount={getStarCount(msg.id)}
+                  hasStarred={hasStarred(msg.id)}
+                  onToggleStar={toggleStar}
                 />
               );
             })

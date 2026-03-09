@@ -175,6 +175,35 @@ export type Database = {
           },
         ]
       }
+      pc_stars: {
+        Row: {
+          created_at: string
+          id: string
+          message_id: string
+          nickname: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_id: string
+          nickname: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_id?: string
+          nickname?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pc_stars_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "pc_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       secret_messages: {
         Row: {
           content: string | null
