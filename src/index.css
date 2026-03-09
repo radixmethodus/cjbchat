@@ -146,3 +146,20 @@
 .disco-mode {
   animation: disco-bg 2s linear infinite;
 }
+
+/* Rainbow text for disco messages */
+@keyframes rainbow-text {
+  0% { color: #ff0000; }
+  14% { color: #ff8800; }
+  28% { color: #ffff00; }
+  42% { color: #00ff00; }
+  57% { color: #0088ff; }
+  71% { color: #4400ff; }
+  85% { color: #ff00ff; }
+  100% { color: #ff0000; }
+}
+
+.disco-text {
+  animation: rainbow-text 1.5s linear infinite;
+  font-weight: 900 !important;
+}

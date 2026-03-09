@@ -48,7 +48,8 @@ const Room = () => {
     }
 
     setSending(true);
-    const error = await sendMessage(nickname, trimmed, color, replyTo?.id);
+    const msgColor = discoMode ? "disco" : color;
+    const error = await sendMessage(nickname, trimmed, msgColor, replyTo?.id);
     if (error) {
       toast.error(error.message || "Failed to send");
     } else {
