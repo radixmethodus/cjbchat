@@ -197,19 +197,49 @@ const Room = () => {
               No messages yet. Say something!
             </p>
           ) : (
-            messages.map((msg, i) => {
-              const prev = messages[i - 1];
-              const showName = !prev || prev.nickname !== msg.nickname;
-              return (
-                <MessageBubble
-                  key={msg.id}
-                  message={msg}
-                  isOwn={msg.nickname === nickname}
-                  showName={showName}
-                  onReply={handleReply}
-                />
-              );
-            })
+            (() => {
+              // Merge messages and presence events into a single timeline
+              type TimelineItem =
+                | { kind: "msg"; data: PcMessage }
+                | { kind: "event"; data: PresenceEvent };
+
+              const timeline: TimelineItem[] = [
+                ...messages.map((m) => ({ kind: "msg" as const, data: m })),
+                ...presenceEvents.map((e) => ({ kind: "event" as const, data: e })),
+              ].sort((a, b) => {
+                const tA = a.kind === "msg" ? new Date(a.data.created_at).getTime() : a.data.timestamp;
+                const tB = b.kind === "msg" ? new Date(b.data.created_at).getTime() : b.data.timestamp;
+                return tA - tB;
+              });
+
+              let prevNickname: string | null = null;
+              return timeline.map((item) => {
+                if (item.kind === "event") {
+                  prevNickname = null;
+                  const e = item.data;
+                  return (
+                    <div
+                      key={e.id}
+                      className="text-center text-[8px] font-pixel text-pc-text-muted my-2 opacity-60"
+                    >
+                      {e.type === "join" ? `▸ ${e.nickname} joined` : `◂ ${e.nickname} left`}
+                    </div>
+                  );
+                }
+                const msg = item.data;
+                const showName = prevNickname !== msg.nickname;
+                prevNickname = msg.nickname;
+                return (
+                  <MessageBubble
+                    key={msg.id}
+                    message={msg}
+                    isOwn={msg.nickname === nickname}
+                    showName={showName}
+                    onReply={handleReply}
+                  />
+                );
+              });
+            })()
           )}
         </div>
       </div>
