@@ -27,7 +27,7 @@ type Props = {
 };
 
 const MessageBubble = forwardRef<HTMLDivElement, Props>(
-  ({ message, isOwn, showName, onReply }, ref) => {
+  ({ message, isOwn, showName, onReply, starCount, hasStarred, onToggleStar }, ref) => {
     const time = format(new Date(message.created_at), "HH:mm");
     const hasImage = message.file_url && message.file_type?.startsWith("image/");
 
