@@ -204,6 +204,60 @@ export type Database = {
           },
         ]
       }
+      push_config: {
+        Row: {
+          created_at: string
+          id: number
+          private_key: string
+          public_key: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          private_key: string
+          public_key: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          private_key?: string
+          public_key?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth_key: string
+          created_at: string
+          endpoint: string
+          id: string
+          nickname: string
+          notify_all: boolean
+          notify_mentions: boolean
+          p256dh: string
+        }
+        Insert: {
+          auth_key: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          nickname: string
+          notify_all?: boolean
+          notify_mentions?: boolean
+          p256dh: string
+        }
+        Update: {
+          auth_key?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          nickname?: string
+          notify_all?: boolean
+          notify_mentions?: boolean
+          p256dh?: string
+        }
+        Relationships: []
+      }
       secret_messages: {
         Row: {
           content: string | null
@@ -275,6 +329,7 @@ export type Database = {
             }
             Returns: undefined
           }
+      get_vapid_public_key: { Args: never; Returns: string }
       pin_message: {
         Args: {
           _message_id: string
