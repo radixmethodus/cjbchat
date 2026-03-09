@@ -34,7 +34,7 @@ const Room = () => {
   const [replyTo, setReplyTo] = useState<PcMessage | null>(null);
   const [sending, setSending] = useState(false);
   const [discoMode, setDiscoMode] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [reportTarget, setReportTarget] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
