@@ -6,6 +6,23 @@ import { useTypingPresence } from "@/hooks/useTypingPresence";
 import MessageBubble, { type PcMessage } from "@/components/pictochat/MessageBubble";
 import { toast } from "sonner";
 
+const playMessageSound = () => {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(660, ctx.currentTime);
+    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.06);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.15);
+  } catch { /* no audio */ }
+};
+
 const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
@@ -24,6 +41,8 @@ const Room = () => {
   const { messages, loading, sendMessage, uploadImage } = useRoomMessages(room);
   const { typingUsers, setTyping } = useTypingPresence(room, nickname);
 
+  const prevCountRef = useRef(0);
+
   useEffect(() => {
     if (!nickname) navigate("/");
   }, [nickname, navigate]);
@@ -33,6 +52,11 @@ const Room = () => {
     if (el) {
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }
+    // Play sound for new messages (skip initial load)
+    if (prevCountRef.current > 0 && messages.length > prevCountRef.current) {
+      playMessageSound();
+    }
+    prevCountRef.current = messages.length;
   }, [messages.length]);
 
   const handleSend = useCallback(async () => {
@@ -48,7 +72,8 @@ const Room = () => {
     }
 
     setSending(true);
-    const error = await sendMessage(nickname, trimmed, color, replyTo?.id);
+    const msgColor = discoMode ? "disco" : color;
+    const error = await sendMessage(nickname, trimmed, msgColor, replyTo?.id);
     if (error) {
       toast.error(error.message || "Failed to send");
     } else {

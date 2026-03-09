@@ -64,8 +64,8 @@ const MessageBubble = forwardRef<HTMLDivElement, Props>(
             }
           }}
         >
-          {message.content && (
-            <p className="text-[10px] font-pixel text-pc-text break-words whitespace-pre-wrap leading-relaxed">
+        {message.content && (
+            <p className={`text-[10px] font-pixel break-words whitespace-pre-wrap leading-relaxed ${message.color === "disco" ? "disco-text" : "text-pc-text"}`}>
               {message.content}
             </p>
           )}
