@@ -252,10 +252,11 @@ const Room = () => {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-[8px] font-pixel text-pc-text">
-                      {isSubscribed ? "Enabled" : "Disabled"}
+                      {pushLoading ? "..." : isSubscribed ? "Enabled" : "Disabled"}
                     </span>
                     <Switch
                       checked={isSubscribed}
+                      disabled={pushLoading}
                       onCheckedChange={async (val) => {
                         if (val) await pushSubscribe();
                         else await pushUnsubscribe();
@@ -264,6 +265,10 @@ const Room = () => {
                   </div>
                   {isSubscribed && (
                     <>
+                      <div className="h-px bg-pc-border my-2" />
+                      <p className="text-[7px] font-pixel text-pc-text-muted mb-2">
+                        Notify me for:
+                      </p>
                       <div className="flex items-center justify-between">
                         <span className="text-[8px] font-pixel text-pc-text">All messages</span>
                         <Switch
@@ -272,16 +277,21 @@ const Room = () => {
                         />
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[8px] font-pixel text-pc-text">@mentions</span>
+                        <span className="text-[8px] font-pixel text-pc-text">@mentions only</span>
                         <Switch
                           checked={notifyMentions}
                           onCheckedChange={(val) => updatePrefs(notifyAll, val)}
                         />
                       </div>
-                      <p className="text-[7px] font-pixel text-pc-text-muted">
-                        Use @nickname to mention someone
+                      <p className="text-[6px] font-pixel text-pc-text-muted mt-2 opacity-75">
+                        Tip: type @name to mention
                       </p>
                     </>
+                  )}
+                  {!isSubscribed && !pushLoading && (
+                    <p className="text-[6px] font-pixel text-pc-text-muted">
+                      Get notified when new messages arrive
+                    </p>
                   )}
                 </div>
               </PopoverContent>
