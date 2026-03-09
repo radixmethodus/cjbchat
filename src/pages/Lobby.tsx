@@ -18,6 +18,7 @@ const Lobby = () => {
     const trimmed = nickname.trim();
     if (!trimmed || trimmed.length > 20) return;
     sessionStorage.setItem("pc_nickname", trimmed);
+    localStorage.setItem("pc_last_nickname", trimmed);
     navigate(`/room/${selectedRoom}`);
   };
 
