@@ -388,7 +388,7 @@ const Room = () => {
             <span>↳ Replying to <strong style={{ color: replyTo.color }}>{replyTo.nickname}</strong></span>
             <button
               onClick={() => setReplyTo(null)}
-              className="text-pc-blue hover:brightness-125"
+              className="text-[14px] text-pc-blue hover:brightness-125 transition-all"
             >
               ✕
             </button>
