@@ -401,7 +401,7 @@ const Room = () => {
             <span>⚠ Reporting <strong>{reportTarget}</strong> — type reason below</span>
             <button
               onClick={() => setReportTarget(null)}
-              className="text-pc-blue hover:brightness-125"
+              className="text-[14px] text-pc-blue hover:brightness-125 transition-all"
             >
               ✕
             </button>
