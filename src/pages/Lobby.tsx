@@ -7,7 +7,7 @@ const ROOMS = ["A", "B", "C", "D"] as const;
 
 const Lobby = () => {
   const [nickname, setNickname] = useState(
-    () => sessionStorage.getItem("pc_nickname") || ""
+    () => sessionStorage.getItem("pc_nickname") || localStorage.getItem("pc_last_nickname") || ""
   );
   const [selectedRoom, setSelectedRoom] = useState<string>("A");
   const navigate = useNavigate();
