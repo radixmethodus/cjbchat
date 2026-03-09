@@ -151,6 +151,14 @@ const Room = () => {
 
       {/* Bottom screen - input area */}
       <div className="shrink-0 ds-screen-bottom m-1 mt-0 p-3">
+        {/* Typing indicator */}
+        {typingUsers.length > 0 && (
+          <div className="text-[8px] font-pixel text-pc-text-muted mb-1 animate-pulse">
+            {typingUsers.length === 1
+              ? `${typingUsers[0]} is typing...`
+              : `${typingUsers.join(", ")} are typing...`}
+          </div>
+        )}
         {/* Reply indicator */}
         {replyTo && (
           <div className="flex items-center gap-2 mb-2 text-[8px] font-pixel text-pc-text-muted">
