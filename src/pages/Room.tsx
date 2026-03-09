@@ -156,6 +156,7 @@ const Room = () => {
       showAlert(error.message || "Failed to send", "error");
     } else {
       playSendSound();
+      triggerPush(room, trimmed);
       setInput("");
       setReplyTo(null);
       setTyping(false);
