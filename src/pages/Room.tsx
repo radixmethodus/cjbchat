@@ -69,6 +69,10 @@ const Room = () => {
   const { messages, loading, sendMessage, uploadImage } = useRoomMessages(room);
   const { typingUsers, setTyping } = useTypingPresence(room, nickname);
   const { toggleStar, getStarCount, hasStarred } = useStars(room, nickname);
+  const {
+    isSubscribed, notifyAll, notifyMentions, supported: pushSupported,
+    subscribe: pushSubscribe, unsubscribe: pushUnsubscribe, updatePrefs, triggerPush,
+  } = usePushNotifications(nickname);
 
   const prevCountRef = useRef(0);
 
