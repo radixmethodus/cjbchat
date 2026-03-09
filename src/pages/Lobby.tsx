@@ -39,7 +39,7 @@ const Lobby = () => {
               <button
                 key={room}
                 onClick={() => setSelectedRoom(room)}
-                className={`room-card w-full flex items-center gap-2 px-2 py-2.5 border text-left transition-colors ${
+                className={`room-card w-full flex items-center gap-3 px-2 py-2 border text-left transition-colors ${
                   selectedRoom === room ? "selected" : ""
                 }`}
                 style={{
@@ -50,9 +50,11 @@ const Lobby = () => {
                       : "transparent",
                 }}
               >
-                <span className="text-sm font-pixel font-bold" style={{ color: "hsl(var(--pc-blue))" }}>
-                  ▶
-                </span>
+                <div className="flex items-center justify-center w-8 h-8 border border-pc-border bg-pc-screen">
+                  <span className="text-lg font-pixel font-bold text-pc-text">
+                    {room}
+                  </span>
+                </div>
                 <span className="text-xs font-pixel text-pc-text flex-1">
                   Chat Room {room}
                 </span>
