@@ -137,6 +137,16 @@
   font-family: var(--font-pixel);
 }
 
+/* Input focus transition */
+.pc-input {
+  transition: border-color 0.15s ease;
+}
+
+/* Smooth scrolling touch */
+.scroll-smooth {
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Disco mode */
 @keyframes disco-bg {
   0% { filter: hue-rotate(0deg); }
@@ -162,4 +172,47 @@
 .disco-text {
   animation: rainbow-text 1.5s linear infinite;
   font-weight: 900 !important;
+}
+
+/* Obscure blur effect */
+.obscure-blur {
+  filter: blur(8px);
+  cursor: pointer;
+  user-select: none;
+  transition: filter 0.2s ease;
+}
+
+/* Fade in animation */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Slide up animation */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Action slider enter animation */
+@keyframes slider-enter {
+  from {
+    opacity: 0;
+    transform: scaleX(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+.action-slider-enter {
+  animation: slider-enter 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center;
 }

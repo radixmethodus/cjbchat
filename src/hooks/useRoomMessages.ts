@@ -8,6 +8,8 @@ type RealtimePayload = {
   old: Record<string, unknown>;
 };
 
+const PAGE_SIZE = 50;
+
 function resolveReplies(msgs: PcMessage[]): PcMessage[] {
   return msgs.map((m) => {
     if (m.reply_to) {
@@ -23,20 +25,49 @@ function resolveReplies(msgs: PcMessage[]): PcMessage[] {
 export function useRoomMessages(room: string) {
   const [messages, setMessages] = useState<PcMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
+  // Fetch latest PAGE_SIZE messages
   const fetchMessages = useCallback(async () => {
     const { data, error } = await supabase
       .from("pc_messages" as any)
       .select("*")
       .eq("room", room)
-      .order("created_at", { ascending: true })
-      .limit(200);
+      .order("created_at", { ascending: false })
+      .limit(PAGE_SIZE);
 
     if (!error && data) {
-      setMessages(resolveReplies(data as unknown as PcMessage[]));
+      const reversed = (data as unknown as PcMessage[]).reverse();
+      setMessages(resolveReplies(reversed));
+      setHasMore(data.length === PAGE_SIZE);
     }
   }, [room]);
+
+  // Load older messages (cursor-based pagination)
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || messages.length === 0) return;
+    setLoadingMore(true);
+
+    const oldest = messages[0];
+    const { data, error } = await supabase
+      .from("pc_messages" as any)
+      .select("*")
+      .eq("room", room)
+      .lt("created_at", oldest.created_at)
+      .order("created_at", { ascending: false })
+      .limit(PAGE_SIZE);
+
+    if (!error && data) {
+      const older = (data as unknown as PcMessage[]).reverse();
+      if (older.length > 0) {
+        setMessages((prev) => resolveReplies([...older, ...prev]));
+      }
+      setHasMore(data.length === PAGE_SIZE);
+    }
+    setLoadingMore(false);
+  }, [room, messages, loadingMore, hasMore]);
 
   // Initial fetch
   useEffect(() => {
@@ -44,7 +75,7 @@ export function useRoomMessages(room: string) {
     fetchMessages().finally(() => setLoading(false));
   }, [fetchMessages]);
 
-  // Re-sync when page becomes visible (fixes mobile background desync)
+  // Re-sync when page becomes visible
   useEffect(() => {
     const onVisibility = () => {
       if (document.visibilityState === "visible") {
@@ -114,5 +145,5 @@ export function useRoomMessages(room: string) {
     return { url: urlData.publicUrl, error: null };
   }, [room]);
 
-  return { messages, loading, sendMessage, uploadImage };
+  return { messages, loading, loadingMore, hasMore, loadMore, sendMessage, uploadImage };
 }

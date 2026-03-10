@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useThemeColor, THEME_COLORS } from "@/hooks/useThemeColor";
 import { useRoomStats } from "@/hooks/useRoomStats";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const ROOMS = ["A", "B", "C", "D"] as const;
 
@@ -10,20 +11,43 @@ const Lobby = () => {
     () => sessionStorage.getItem("pc_nickname") || localStorage.getItem("pc_last_nickname") || ""
   );
   const [selectedRoom, setSelectedRoom] = useState<string>("A");
+  const [showPushPrompt, setShowPushPrompt] = useState(false);
   const navigate = useNavigate();
   const { selected: themeColor, setSelected: setThemeColor } = useThemeColor();
   const { data: roomStats } = useRoomStats();
+  const { supported: pushSupported, isSubscribed, subscribe: pushSubscribe, actionLoading: pushLoading } = usePushNotifications(nickname || null);
 
   const handleEnter = () => {
     const trimmed = nickname.trim();
     if (!trimmed || trimmed.length > 20) return;
     sessionStorage.setItem("pc_nickname", trimmed);
     localStorage.setItem("pc_last_nickname", trimmed);
+
+    // Show push prompt once per session if supported and not already subscribed
+    const alreadyPrompted = sessionStorage.getItem("pc_push_prompted");
+    if (pushSupported && !isSubscribed && !alreadyPrompted) {
+      setShowPushPrompt(true);
+      return;
+    }
+
+    navigate(`/room/${selectedRoom}`);
+  };
+
+  const handlePushEnable = async () => {
+    sessionStorage.setItem("pc_push_prompted", "1");
+    await pushSubscribe();
+    setShowPushPrompt(false);
+    navigate(`/room/${selectedRoom}`);
+  };
+
+  const handlePushSkip = () => {
+    sessionStorage.setItem("pc_push_prompted", "1");
+    setShowPushPrompt(false);
     navigate(`/room/${selectedRoom}`);
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[100dvh] bg-pc-body p-4">
+    <div className="flex items-center justify-center min-h-[100dvh] bg-pc-body p-4 animate-fade-in">
       <div className="w-full max-w-md">
         {/* Title */}
         <div className="text-center mb-6">
@@ -146,13 +170,43 @@ const Lobby = () => {
             <button
               onClick={handleEnter}
               disabled={!nickname.trim()}
-              className="w-full px-4 py-2 text-xs font-pixel font-bold bg-pc-blue-btn text-primary-foreground border-2 border-pc-blue-dark disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:brightness-90 transition-all"
+              className="w-full px-4 py-2 text-xs font-pixel font-bold bg-pc-blue-btn text-primary-foreground border-2 border-pc-blue-dark disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:scale-95 active:brightness-90 transition-all"
             >
               Enter
             </button>
           </div>
         </div>
       </div>
+
+      {/* Push notification prompt modal */}
+      {showPushPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-fade-in">
+          <div className="ds-screen-bottom p-5 w-72 flex flex-col gap-4 animate-slide-up">
+            <p className="text-xs font-pixel font-bold text-pc-blue text-center">
+              🔔 Enable Notifications?
+            </p>
+            <p className="text-[9px] font-pixel text-pc-text-muted text-center leading-relaxed">
+              Get notified when someone sends a message while the app is closed.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={handlePushSkip}
+                disabled={pushLoading}
+                className="flex-1 px-3 py-2 text-[10px] font-pixel bg-pc-screen border-2 border-pc-border text-pc-text hover:brightness-110 active:scale-95 transition-all disabled:opacity-40"
+              >
+                Skip
+              </button>
+              <button
+                onClick={handlePushEnable}
+                disabled={pushLoading}
+                className="flex-1 px-3 py-2 text-[10px] font-pixel font-bold bg-pc-blue-btn text-primary-foreground border-2 border-pc-blue-dark hover:brightness-110 active:scale-95 transition-all disabled:opacity-40"
+              >
+                {pushLoading ? "Enabling..." : "Enable"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

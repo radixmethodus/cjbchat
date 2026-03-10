@@ -1,6 +1,7 @@
-import { forwardRef } from "react";
+import { forwardRef, useState, useRef, useCallback } from "react";
 import { format } from "date-fns";
 import ImageLightbox from "./ImageLightbox";
+import MessageActionSlider from "./MessageActionSlider";
 
 export type PcMessage = {
   id: string;
@@ -21,20 +22,62 @@ type Props = {
   isOwn: boolean;
   showName: boolean;
   onReply: (msg: PcMessage) => void;
+  onReport: (nickname: string) => void;
   starCount: number;
   hasStarred: boolean;
   onToggleStar: (messageId: string) => void;
+  activeSlider: string | null;
+  onSliderOpen: (id: string | null) => void;
 };
 
+const OBSCURE_PREFIX = "[OBSCURE]";
+
 const MessageBubble = forwardRef<HTMLDivElement, Props>(
-  ({ message, isOwn, showName, onReply, starCount, hasStarred, onToggleStar }, ref) => {
-    const time = format(new Date(message.created_at), "HH:mm");
+  ({ message, isOwn, showName, onReply, onReport, starCount, hasStarred, onToggleStar, activeSlider, onSliderOpen }, ref) => {
+    const time = format(new Date(message.created_at), "h:mm a");
     const hasImage = message.file_url && message.file_type?.startsWith("image/");
+    const isSliderOpen = activeSlider === message.id;
+
+    const isObscure = message.content?.startsWith(OBSCURE_PREFIX);
+    const [revealed, setRevealed] = useState(false);
+    const displayContent = isObscure
+      ? message.content.slice(OBSCURE_PREFIX.length)
+      : message.content;
+
+    // Long-press detection for mobile
+    const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [isHovered, setIsHovered] = useState(false);
+
+    const handlePointerDown = useCallback(() => {
+      longPressTimer.current = setTimeout(() => {
+        onSliderOpen(message.id);
+      }, 400);
+    }, [message.id, onSliderOpen]);
+
+    const handlePointerUp = useCallback(() => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+    }, []);
+
+    const handlePointerLeave = useCallback(() => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+    }, []);
+
+    const handleBubbleClick = useCallback(() => {
+      if (isObscure && !revealed) {
+        setRevealed(true);
+      }
+    }, [isObscure, revealed]);
 
     return (
       <div
         ref={ref}
-        className={`flex flex-col ${showName ? "mt-3" : "mt-0.5"} ${isOwn ? "items-end" : "items-start"}`}
+        className={`flex flex-col animate-slide-up ${showName ? "mt-3" : "mt-0.5"} ${isOwn ? "items-end" : "items-start"}`}
       >
         {/* Reply preview */}
         {message.reply_nickname && (
@@ -43,54 +86,101 @@ const MessageBubble = forwardRef<HTMLDivElement, Props>(
           </div>
         )}
 
-        {/* Username - only show if different from previous */}
+        {/* Username */}
         {showName && (
           <div
             className="text-[10px] font-pixel font-bold px-1 mb-0.5"
-            style={{ color: message.color }}
+            style={{ color: message.color === "disco" ? "hsl(var(--pc-blue))" : message.color }}
           >
             {message.nickname}
           </div>
         )}
 
-        {/* Bubble - use div instead of button to avoid nested button issues */}
+        {/* Bubble + Slider container */}
         <div
-          onClick={() => onReply(message)}
-          onDoubleClick={(e) => {
-            e.preventDefault();
-            onToggleStar(message.id);
-          }}
-          className={`pc-bubble ${isOwn ? "pc-bubble-own" : ""} px-3 py-2 max-w-[80%] text-left cursor-pointer hover:brightness-95 transition-all select-none`}
-          title="Click to reply · Double-click to ⭐"
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              onReply(message);
-            }
-          }}
+          className="relative max-w-[80%]"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
         >
-          {message.content && (
-            <p className={`text-[13px] font-pixel break-words whitespace-pre-wrap leading-relaxed ${message.color === "disco" ? "disco-text" : "text-pc-text"}`}>
-              {message.content}
-            </p>
+          {/* Action affordance on hover (desktop) */}
+          {isHovered && !isSliderOpen && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSliderOpen(message.id);
+              }}
+              className={`absolute top-1 z-10 w-5 h-5 flex items-center justify-center text-[10px] font-pixel text-pc-text-muted hover:text-pc-blue bg-pc-screen border border-pc-border transition-all ${
+                isOwn ? "right-full mr-0.5" : "left-full ml-0.5"
+              }`}
+              aria-label="Message actions"
+              title="Actions"
+            >
+              ⋯
+            </button>
           )}
-          {hasImage && <ImageLightbox src={message.file_url!} />}
+
+          {/* Action Slider */}
+          <MessageActionSlider
+            isOwn={isOwn}
+            isOpen={isSliderOpen}
+            onClose={() => onSliderOpen(null)}
+            onStar={() => onToggleStar(message.id)}
+            onReply={() => onReply(message)}
+            onReport={() => onReport(message.nickname)}
+            starCount={starCount}
+            hasStarred={hasStarred}
+          />
+
+          {/* Bubble */}
+          <div
+            onClick={handleBubbleClick}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerLeave}
+            onContextMenu={(e) => e.preventDefault()}
+            className={`pc-bubble ${isOwn ? "pc-bubble-own" : ""} px-3 py-2 text-left select-none relative`}
+            title={isObscure && !revealed ? "Tap to reveal" : "Hold for actions"}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                if (isObscure && !revealed) {
+                  setRevealed(true);
+                  return;
+                }
+                onSliderOpen(isSliderOpen ? null : message.id);
+              }
+            }}
+          >
+            {displayContent && (
+              <p
+                className={`text-[13px] font-pixel break-words whitespace-pre-wrap leading-relaxed transition-all duration-200 ${
+                  message.color === "disco" ? "disco-text" : "text-pc-text"
+                } ${isObscure && !revealed ? "obscure-blur" : ""}`}
+              >
+                {displayContent}
+              </p>
+            )}
+            {isObscure && !revealed && (
+              <span className="absolute inset-0 flex items-center justify-center text-[9px] font-pixel text-pc-text-muted pointer-events-none">
+                🔒 Tap to reveal
+              </span>
+            )}
+            {hasImage && <ImageLightbox src={message.file_url!} />}
+          </div>
         </div>
 
         {/* Star count + Timestamp */}
         <div className="flex items-center gap-1.5 mt-0.5 px-1">
           {starCount > 0 && (
-            <button
-              onClick={() => onToggleStar(message.id)}
-              className={`text-[9px] font-pixel flex items-center gap-0.5 transition-all hover:brightness-125 ${
+            <span
+              className={`text-[9px] font-pixel flex items-center gap-0.5 ${
                 hasStarred ? "text-yellow-400" : "text-pc-text-muted"
               }`}
-              title={hasStarred ? "Unstar" : "Star"}
             >
               ⭐ {starCount}
-            </button>
+            </span>
           )}
           <span className="text-[8px] font-pixel text-pc-text-muted">
             {time}

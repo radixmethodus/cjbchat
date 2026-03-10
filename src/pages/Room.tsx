@@ -4,15 +4,23 @@ import { useRoomMessages } from "@/hooks/useRoomMessages";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTypingPresence } from "@/hooks/useTypingPresence";
 import { useStars } from "@/hooks/useStars";
-import { usePushNotifications } from "@/hooks/usePushNotifications";
 import MessageBubble, { type PcMessage } from "@/components/pictochat/MessageBubble";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Shared AudioContext for reuse
+let sharedAudioCtx: AudioContext | null = null;
+function getAudioCtx(): AudioContext {
+  if (!sharedAudioCtx || sharedAudioCtx.state === "closed") {
+    sharedAudioCtx = new AudioContext();
+  }
+  return sharedAudioCtx;
+}
 
 const playSendSound = () => {
   try {
-    const ctx = new AudioContext();
+    const ctx = getAudioCtx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
@@ -29,7 +37,7 @@ const playSendSound = () => {
 
 const playReceiveSound = () => {
   try {
-    const ctx = new AudioContext();
+    const ctx = getAudioCtx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
@@ -50,6 +58,8 @@ type InlineAlert = {
   type: "info" | "error" | "success";
 };
 
+const COLOR_RE = /^hsl\(\d+,\s*\d+%,\s*\d+%\)$/;
+
 const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
@@ -63,27 +73,26 @@ const Room = () => {
   const [reportTarget, setReportTarget] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<InlineAlert[]>([]);
   const [showParticipants, setShowParticipants] = useState(false);
+  const [activeSlider, setActiveSlider] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const initialScrollDone = useRef(false);
+  const lastSendTimeRef = useRef(0);
 
   const room = roomId?.toUpperCase() || "A";
-  const { messages, loading, sendMessage, uploadImage } = useRoomMessages(room);
+
+  // Validate nickname on mount
+  useEffect(() => {
+    if (nickname && nickname.length > 20) {
+      sessionStorage.removeItem("pc_nickname");
+      navigate("/");
+    }
+  }, [nickname, navigate]);
+
+  const { messages, loading, loadingMore, hasMore, loadMore, sendMessage, uploadImage } = useRoomMessages(room);
   const { typingUsers, setTyping } = useTypingPresence(room, nickname);
   const { toggleStar, getStarCount, hasStarred } = useStars(room, nickname);
-  const {
-    isSubscribed,
-    notifyAll,
-    notifyMentions,
-    supported: pushSupported,
-    actionLoading: pushLoading,
-    error: pushError,
-    subscribe: pushSubscribe,
-    unsubscribe: pushUnsubscribe,
-    updatePrefs,
-    triggerPush,
-  } = usePushNotifications(nickname);
 
   const prevCountRef = useRef(0);
 
@@ -116,7 +125,6 @@ const Room = () => {
     if (!el || messages.length === 0) return;
 
     if (!initialScrollDone.current) {
-      // First load: jump instantly to bottom (no visible scroll)
       el.scrollTop = el.scrollHeight;
       initialScrollDone.current = true;
       prevCountRef.current = messages.length;
@@ -124,7 +132,6 @@ const Room = () => {
     }
 
     if (messages.length > prevCountRef.current) {
-      // New message arrived
       const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
       if (isNearBottom) {
         el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
@@ -146,10 +153,86 @@ const Room = () => {
     const trimmed = input.trim();
     if (!trimmed || !nickname || sending) return;
 
+    // Throttle: 1 message per second
+    const now = Date.now();
+    if (now - lastSendTimeRef.current < 1000) {
+      showAlert("Slow down! Wait a second between messages.", "error");
+      return;
+    }
+
+    // === SECRET COMMANDS ===
+
     if (trimmed.toLowerCase() === "/disco") {
       setDiscoMode((prev) => !prev);
       setInput("");
       showAlert(discoMode ? "Disco mode OFF" : "🪩 Disco mode ON!", "success");
+      return;
+    }
+
+    // /secret — navigate to hidden room E
+    if (trimmed.toLowerCase() === "/secret") {
+      setInput("");
+      showAlert("Entering secret room...", "info");
+      setTimeout(() => navigate("/room/E"), 600);
+      return;
+    }
+
+    // /complaints — show local-only complaint list
+    if (trimmed.toLowerCase() === "/complaints") {
+      setInput("");
+      try {
+        const { data, error } = await supabase
+          .from("complaints_public" as any)
+          .select("*")
+          .eq("room", room)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        if (error || !data || (data as any[]).length === 0) {
+          showAlert("No complaints found for this room.", "info");
+        } else {
+          (data as any[]).forEach((c: any) => {
+            showAlert(`⚠ ${c.reported_nickname}: ${c.reason || "No reason given"}`, "info");
+          });
+        }
+      } catch {
+        showAlert("Failed to load complaints.", "error");
+      }
+      return;
+    }
+
+    // /obscure [text] — send blurred message
+    if (trimmed.toLowerCase().startsWith("/obscure ")) {
+      const obscureText = trimmed.slice(9).trim();
+      if (!obscureText) {
+        showAlert("Usage: /obscure [message]", "error");
+        setInput("");
+        return;
+      }
+      setSending(true);
+      lastSendTimeRef.current = Date.now();
+      const msgColor = discoMode ? "disco" : color;
+      if (!COLOR_RE.test(msgColor) && msgColor !== "disco") {
+        showAlert("Invalid color", "error");
+        setSending(false);
+        return;
+      }
+      const error = await sendMessage(nickname, `[OBSCURE]${obscureText}`, msgColor, replyTo?.id);
+      if (error) {
+        showAlert(error.message || "Failed to send", "error");
+      } else {
+        playSendSound();
+        try {
+          await supabase.functions.invoke("send-push", {
+            body: { room, nickname, content: `[OBSCURE]${obscureText}` },
+          });
+        } catch { /* fire-and-forget */ }
+        setInput("");
+        setReplyTo(null);
+        setTyping(false);
+        inputRef.current?.focus();
+      }
+      setSending(false);
       return;
     }
 
@@ -174,6 +257,7 @@ const Room = () => {
 
     if (reportTarget) {
       setSending(true);
+      lastSendTimeRef.current = Date.now();
       const { error } = await supabase.from("complaints" as any).insert({
         room,
         reporter_nickname: nickname,
@@ -192,21 +276,32 @@ const Room = () => {
       return;
     }
 
-    setSending(true);
+    // Validate color
     const msgColor = discoMode ? "disco" : color;
+    if (!COLOR_RE.test(msgColor) && msgColor !== "disco") {
+      showAlert("Invalid color", "error");
+      return;
+    }
+
+    setSending(true);
+    lastSendTimeRef.current = Date.now();
     const error = await sendMessage(nickname, trimmed, msgColor, replyTo?.id);
     if (error) {
       showAlert(error.message || "Failed to send", "error");
     } else {
       playSendSound();
-      triggerPush(room, trimmed);
+      try {
+        await supabase.functions.invoke("send-push", {
+          body: { room, nickname, content: trimmed },
+        });
+      } catch { /* fire-and-forget */ }
       setInput("");
       setReplyTo(null);
       setTyping(false);
       inputRef.current?.focus();
     }
     setSending(false);
-  }, [input, nickname, color, replyTo, sending, sendMessage, discoMode, reportTarget, room, showAlert, triggerPush, setTyping]);
+  }, [input, nickname, color, replyTo, sending, sendMessage, discoMode, reportTarget, room, showAlert, navigate, setTyping]);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -219,7 +314,16 @@ const Room = () => {
       showAlert("Max file size is 5MB", "error");
       return;
     }
+
+    // Throttle
+    const now = Date.now();
+    if (now - lastSendTimeRef.current < 1000) {
+      showAlert("Slow down! Wait a second between messages.", "error");
+      return;
+    }
+
     setSending(true);
+    lastSendTimeRef.current = Date.now();
     const { url, error: upError } = await uploadImage(file);
     if (upError || !url) {
       showAlert("Upload failed", "error");
@@ -230,7 +334,11 @@ const Room = () => {
     if (error) {
       showAlert(error.message || "Failed to send", "error");
     } else {
-      triggerPush(room, input.trim() || "📷 Image", url);
+      try {
+        await supabase.functions.invoke("send-push", {
+          body: { room, nickname, content: input.trim() || "📷 Image", file_url: url },
+        });
+      } catch { /* fire-and-forget */ }
       setInput("");
       setReplyTo(null);
       setTyping(false);
@@ -238,12 +346,39 @@ const Room = () => {
     }
     setSending(false);
     if (fileRef.current) fileRef.current.value = "";
-  }, [input, nickname, color, replyTo, sending, sendMessage, uploadImage, showAlert, triggerPush, room, setTyping]);
+  }, [input, nickname, color, replyTo, sending, sendMessage, uploadImage, showAlert, room, setTyping]);
 
   const handleReply = useCallback((msg: PcMessage) => {
     setReplyTo(msg);
     inputRef.current?.focus();
   }, []);
+
+  const handleReport = useCallback((targetNickname: string) => {
+    if (targetNickname.toLowerCase() === nickname?.toLowerCase()) {
+      showAlert("You can't report yourself!", "error");
+      return;
+    }
+    setReportTarget(targetNickname);
+    showAlert(`Reporting ${targetNickname} — type your reason and press Send`, "info");
+    inputRef.current?.focus();
+  }, [nickname, showAlert]);
+
+  // Close slider on scroll
+  const handleScroll = useCallback(() => {
+    setActiveSlider(null);
+    const el = scrollRef.current;
+    if (!el || loadingMore || !hasMore) return;
+    if (el.scrollTop < 80) {
+      const prevHeight = el.scrollHeight;
+      loadMore().then(() => {
+        requestAnimationFrame(() => {
+          if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight - prevHeight;
+          }
+        });
+      });
+    }
+  }, [loadMore, loadingMore, hasMore]);
 
   if (!nickname) return null;
 
@@ -254,28 +389,28 @@ const Room = () => {
   };
 
   return (
-    <div className={`flex flex-col h-[100dvh] bg-pc-body ${discoMode ? "disco-mode" : ""}`}>
+    <div className={`flex flex-col h-[100dvh] bg-pc-body animate-fade-in ${discoMode ? "disco-mode" : ""}`}>
       {/* Header bar */}
       <div className="shrink-0 flex items-center justify-between px-3 py-2 border-b-2 border-pc-border bg-pc-body">
         <button
           onClick={() => navigate("/")}
-          className="text-[10px] font-pixel text-pc-blue hover:brightness-125 transition-all"
+          className="text-[10px] font-pixel text-pc-blue hover:brightness-125 transition-all active:scale-95"
         >
           ◀ Back
         </button>
         <span className="text-xs font-pixel font-bold text-pc-blue">
           Chat Room {room}
         </span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 leading-none">
           {/* Participants button */}
           <Popover open={showParticipants} onOpenChange={setShowParticipants}>
             <PopoverTrigger asChild>
               <button
-                className="text-[10px] font-pixel text-pc-text-muted hover:text-pc-blue transition-all"
+                className="text-[10px] font-pixel text-pc-text-muted hover:text-pc-blue transition-all leading-none flex items-center gap-0.5"
                 aria-label="Show participants"
                 title="Participants"
               >
-                👥 <span className="text-[8px]">{participants.length}</span>
+                👥 <span className="text-[8px] leading-none">{participants.length}</span>
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-3 bg-pc-body/95 border-2 border-pc-border rounded-[2px] font-pixel shadow-lg">
@@ -305,106 +440,30 @@ const Room = () => {
             </PopoverContent>
           </Popover>
 
-          <span className="text-[8px] font-pixel text-pc-text-muted">
+          <span className="text-[8px] font-pixel text-pc-text-muted leading-none">
             {messages.length} msgs
           </span>
-
-          {pushSupported && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  className="text-[10px] font-pixel text-pc-text-muted hover:text-pc-blue transition-all relative"
-                  aria-label="Push notifications"
-                >
-                  🔔
-                  {isSubscribed && (
-                    <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-pc-blue" />
-                  )}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 p-3 bg-pc-body/95 border-2 border-pc-border rounded-[2px] font-pixel shadow-lg">
-                <p className="text-[9px] font-pixel font-bold text-pc-blue mb-2">
-                  Push Notifications
-                </p>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[8px] font-pixel text-pc-text">
-                      {pushLoading
-                        ? "Working…"
-                        : isSubscribed
-                          ? "Enabled"
-                          : "Disabled"}
-                    </span>
-                    <Switch
-                      checked={isSubscribed}
-                      disabled={pushLoading || ("Notification" in window && Notification.permission === "denied")}
-                      onCheckedChange={async (val) => {
-                        if (val) await pushSubscribe();
-                        else await pushUnsubscribe();
-                      }}
-                    />
-                  </div>
-
-                  {"Notification" in window && Notification.permission === "denied" && (
-                    <p className="text-[7px] font-pixel text-pc-text-muted">
-                      Browser blocked notifications — enable in site settings.
-                    </p>
-                  )}
-
-                  {pushError && (
-                    <p className="text-[7px] font-pixel text-destructive">
-                      {pushError.message}
-                    </p>
-                  )}
-
-                  {isSubscribed ? (
-                    <>
-                      <div className="h-px bg-pc-border my-2" />
-                      <p className="text-[7px] font-pixel text-pc-text-muted mb-2">
-                        Notify me for:
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[8px] font-pixel text-pc-text">All messages</span>
-                        <Switch
-                          checked={notifyAll}
-                          disabled={pushLoading}
-                          onCheckedChange={(val) => updatePrefs(val, notifyMentions)}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[8px] font-pixel text-pc-text">@mentions only</span>
-                        <Switch
-                          checked={notifyMentions}
-                          disabled={pushLoading}
-                          onCheckedChange={(val) => updatePrefs(notifyAll, val)}
-                        />
-                      </div>
-                      <p className="text-[6px] font-pixel text-pc-text-muted mt-2 opacity-75">
-                        Notifications appear when the app is closed.
-                      </p>
-                    </>
-                  ) : (
-                    !pushLoading && (
-                      <p className="text-[6px] font-pixel text-pc-text-muted">
-                        Get notified when someone sends a message while the app is closed.
-                      </p>
-                    )
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
-          )}
         </div>
       </div>
 
       {/* Top screen - message list */}
       <div className="flex-1 min-h-0 ds-screen m-1 mb-0">
-        <div ref={scrollRef} className="h-full overflow-y-auto p-3">
-          {loading ? (
-            <p className="text-center text-[10px] font-pixel text-pc-text-muted py-8">
-              Loading...
+        <div ref={scrollRef} className="h-full overflow-y-auto p-3 scroll-smooth" role="log" aria-live="polite" onScroll={handleScroll}>
+          {loadingMore && (
+            <p className="text-center text-[9px] font-pixel text-pc-text-muted py-2">
+              Loading older messages...
             </p>
+          )}
+          {loading ? (
+            <div className="space-y-3 py-4">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className={`flex flex-col ${i % 2 === 0 ? "items-start" : "items-end"}`}>
+                  <Skeleton className="h-2.5 w-16 mb-1 bg-pc-border/40" />
+                  <Skeleton className={`h-8 ${i % 3 === 0 ? "w-[60%]" : "w-[45%]"} bg-pc-border/30`} />
+                  <Skeleton className="h-2 w-10 mt-0.5 bg-pc-border/20" />
+                </div>
+              ))}
+            </div>
           ) : messages.length === 0 ? (
             <p className="text-center text-[10px] font-pixel text-pc-text-muted py-8">
               No messages yet. Say something!
@@ -420,9 +479,12 @@ const Room = () => {
                   isOwn={msg.nickname === nickname}
                   showName={showName}
                   onReply={handleReply}
+                  onReport={handleReport}
                   starCount={getStarCount(msg.id)}
                   hasStarred={hasStarred(msg.id)}
                   onToggleStar={toggleStar}
+                  activeSlider={activeSlider}
+                  onSliderOpen={setActiveSlider}
                 />
               );
             })
@@ -455,7 +517,7 @@ const Room = () => {
           </div>
         )}
 
-        {/* Reply indicator — prominent styling */}
+        {/* Reply indicator */}
         {replyTo && (
           <div
             className="flex items-center gap-2 mb-2 px-2 py-1.5 border-l-[3px]"
@@ -506,7 +568,7 @@ const Room = () => {
           <button
             onClick={() => fileRef.current?.click()}
             disabled={sending}
-            className="px-2 py-2 text-[10px] font-pixel bg-pc-screen border-2 border-pc-border text-pc-text-muted hover:text-pc-blue hover:border-pc-blue disabled:opacity-40 transition-all"
+            className="px-2 py-2 text-[10px] font-pixel bg-pc-screen border-2 border-pc-border text-pc-text-muted hover:text-pc-blue hover:border-pc-blue disabled:opacity-40 transition-all active:scale-95"
             title="Upload image"
           >
             📷
@@ -547,7 +609,7 @@ const Room = () => {
           <button
             onClick={handleSend}
             disabled={!input.trim() || sending}
-            className="px-4 py-2 text-[10px] font-pixel font-bold bg-pc-blue-btn text-primary-foreground border-2 border-pc-blue-dark disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:brightness-90 transition-all"
+            className="px-4 py-2 text-[10px] font-pixel font-bold bg-pc-blue-btn text-primary-foreground border-2 border-pc-blue-dark disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:scale-95 active:brightness-90 transition-all"
           >
             {reportTarget ? "Report" : "Send"}
           </button>
