@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useRoomMessages } from "@/hooks/useRoomMessages";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -9,6 +9,7 @@ import MessageBubble, { type PcMessage } from "@/components/pictochat/MessageBub
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
+
 const playSendSound = () => {
   try {
     const ctx = new AudioContext();
@@ -61,9 +62,11 @@ const Room = () => {
   const [discoMode, setDiscoMode] = useState(false);
   const [reportTarget, setReportTarget] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<InlineAlert[]>([]);
+  const [showParticipants, setShowParticipants] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const initialScrollDone = useRef(false);
 
   const room = roomId?.toUpperCase() || "A";
   const { messages, loading, sendMessage, uploadImage } = useRoomMessages(room);
@@ -82,8 +85,18 @@ const Room = () => {
     triggerPush,
   } = usePushNotifications(nickname);
 
-
   const prevCountRef = useRef(0);
+
+  // Derive unique participants from messages
+  const participants = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const msg of messages) {
+      if (!map.has(msg.nickname)) {
+        map.set(msg.nickname, msg.color);
+      }
+    }
+    return Array.from(map.entries()).map(([name, clr]) => ({ name, color: clr }));
+  }, [messages]);
 
   const showAlert = useCallback((text: string, type: InlineAlert["type"] = "info") => {
     const id = crypto.randomUUID();
@@ -97,16 +110,37 @@ const Room = () => {
     if (!nickname) navigate("/");
   }, [nickname, navigate]);
 
+  // Scroll to bottom: instant on first load, smooth on new messages
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) {
-      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    if (!el || messages.length === 0) return;
+
+    if (!initialScrollDone.current) {
+      // First load: jump instantly to bottom (no visible scroll)
+      el.scrollTop = el.scrollHeight;
+      initialScrollDone.current = true;
+      prevCountRef.current = messages.length;
+      return;
     }
-    if (prevCountRef.current > 0 && messages.length > prevCountRef.current) {
-      playReceiveSound();
+
+    if (messages.length > prevCountRef.current) {
+      // New message arrived
+      const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+      if (isNearBottom) {
+        el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      }
+      if (messages[messages.length - 1]?.nickname !== nickname) {
+        playReceiveSound();
+      }
     }
     prevCountRef.current = messages.length;
-  }, [messages.length]);
+  }, [messages.length, nickname]);
+
+  // Reset initial scroll flag when room changes
+  useEffect(() => {
+    initialScrollDone.current = false;
+    prevCountRef.current = 0;
+  }, [room]);
 
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
@@ -172,7 +206,7 @@ const Room = () => {
       inputRef.current?.focus();
     }
     setSending(false);
-  }, [input, nickname, color, replyTo, sending, sendMessage, discoMode, reportTarget, room, showAlert, triggerPush]);
+  }, [input, nickname, color, replyTo, sending, sendMessage, discoMode, reportTarget, room, showAlert, triggerPush, setTyping]);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -204,7 +238,7 @@ const Room = () => {
     }
     setSending(false);
     if (fileRef.current) fileRef.current.value = "";
-  }, [input, nickname, color, replyTo, sending, sendMessage, uploadImage, showAlert, triggerPush, room]);
+  }, [input, nickname, color, replyTo, sending, sendMessage, uploadImage, showAlert, triggerPush, room, setTyping]);
 
   const handleReply = useCallback((msg: PcMessage) => {
     setReplyTo(msg);
@@ -233,9 +267,48 @@ const Room = () => {
           Chat Room {room}
         </span>
         <div className="flex items-center gap-2">
+          {/* Participants button */}
+          <Popover open={showParticipants} onOpenChange={setShowParticipants}>
+            <PopoverTrigger asChild>
+              <button
+                className="text-[10px] font-pixel text-pc-text-muted hover:text-pc-blue transition-all"
+                aria-label="Show participants"
+                title="Participants"
+              >
+                👥 <span className="text-[8px]">{participants.length}</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-3 bg-pc-body/95 border-2 border-pc-border rounded-[2px] font-pixel shadow-lg">
+              <p className="text-[9px] font-pixel font-bold text-pc-blue mb-2">
+                Participants ({participants.length})
+              </p>
+              <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                {participants.map((p) => (
+                  <div key={p.name} className="flex items-center gap-2">
+                    <div
+                      className="w-2 h-2 shrink-0"
+                      style={{ backgroundColor: p.color === "disco" ? "hsl(var(--pc-blue))" : p.color }}
+                    />
+                    <span
+                      className="text-[9px] font-pixel font-bold truncate"
+                      style={{ color: p.color === "disco" ? "hsl(var(--pc-blue))" : p.color }}
+                    >
+                      {p.name}
+                      {p.name === nickname && " (you)"}
+                    </span>
+                  </div>
+                ))}
+                {participants.length === 0 && (
+                  <span className="text-[8px] font-pixel text-pc-text-muted">No messages yet</span>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+
           <span className="text-[8px] font-pixel text-pc-text-muted">
             {messages.length} msgs
           </span>
+
           {pushSupported && (
             <Popover>
               <PopoverTrigger asChild>
@@ -308,13 +381,13 @@ const Room = () => {
                         />
                       </div>
                       <p className="text-[6px] font-pixel text-pc-text-muted mt-2 opacity-75">
-                        Tip: type @name to mention
+                        Notifications appear when the app is closed.
                       </p>
                     </>
                   ) : (
                     !pushLoading && (
                       <p className="text-[6px] font-pixel text-pc-text-muted">
-                        Turn this on to get notified when the app is closed.
+                        Get notified when someone sends a message while the app is closed.
                       </p>
                     )
                   )}
@@ -322,7 +395,6 @@ const Room = () => {
               </PopoverContent>
             </Popover>
           )}
-
         </div>
       </div>
 
@@ -382,13 +454,34 @@ const Room = () => {
               : `${typingUsers.join(", ")} are typing...`}
           </div>
         )}
-        {/* Reply indicator */}
+
+        {/* Reply indicator — prominent styling */}
         {replyTo && (
-          <div className="flex items-center gap-2 mb-2 text-[8px] font-pixel text-pc-text-muted">
-            <span>↳ Replying to <strong style={{ color: replyTo.color }}>{replyTo.nickname}</strong></span>
+          <div
+            className="flex items-center gap-2 mb-2 px-2 py-1.5 border-l-[3px]"
+            style={{
+              borderColor: replyTo.color === "disco" ? "hsl(var(--pc-blue))" : replyTo.color,
+              backgroundColor: "hsl(var(--pc-border) / 0.3)",
+            }}
+          >
+            <div className="flex-1 min-w-0">
+              <span className="text-[8px] font-pixel text-pc-text-muted">Replying to </span>
+              <span
+                className="text-[8px] font-pixel font-bold"
+                style={{ color: replyTo.color === "disco" ? "hsl(var(--pc-blue))" : replyTo.color }}
+              >
+                {replyTo.nickname}
+              </span>
+              {replyTo.content && (
+                <p className="text-[8px] font-pixel text-pc-text-muted truncate mt-0.5 opacity-75">
+                  "{replyTo.content}"
+                </p>
+              )}
+            </div>
             <button
               onClick={() => setReplyTo(null)}
-              className="text-[14px] text-pc-blue hover:brightness-125 transition-all"
+              className="text-[14px] text-pc-blue hover:brightness-125 transition-all shrink-0"
+              aria-label="Cancel reply"
             >
               ✕
             </button>
@@ -438,7 +531,7 @@ const Room = () => {
             }}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             maxLength={2000}
-            placeholder={reportTarget ? "Type your reason..." : "Type a message..."}
+            placeholder={reportTarget ? "Type your reason..." : replyTo ? `Reply to ${replyTo.nickname}...` : "Type a message..."}
             autoComplete="new-password"
             autoCorrect="off"
             autoCapitalize="off"
