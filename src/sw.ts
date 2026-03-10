@@ -6,7 +6,7 @@ declare let self: ServiceWorkerGlobalScope;
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
 
-// Push notification handler
+// Push notification handler — only show when no app window is focused
 self.addEventListener("push", (event) => {
   const data = event.data?.json() ?? {};
   const title = data.title || "New message";
@@ -17,7 +17,19 @@ self.addEventListener("push", (event) => {
     data: { url: data.url || "/" },
     tag: "pc-msg-" + Date.now(),
   };
-  event.waitUntil(self.registration.showNotification(title, options));
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clients) => {
+        // If any app window is focused/visible, skip the notification
+        const hasVisibleClient = clients.some(
+          (c) => c.visibilityState === "visible"
+        );
+        if (hasVisibleClient) return;
+        return self.registration.showNotification(title, options);
+      })
+  );
 });
 
 // Notification click handler

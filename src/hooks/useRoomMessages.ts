@@ -8,38 +8,52 @@ type RealtimePayload = {
   old: Record<string, unknown>;
 };
 
+function resolveReplies(msgs: PcMessage[]): PcMessage[] {
+  return msgs.map((m) => {
+    if (m.reply_to) {
+      const parent = msgs.find((p) => p.id === m.reply_to);
+      if (parent) {
+        return { ...m, reply_nickname: parent.nickname, reply_content: parent.content };
+      }
+    }
+    return m;
+  });
+}
+
 export function useRoomMessages(room: string) {
   const [messages, setMessages] = useState<PcMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  // Fetch initial messages
+  const fetchMessages = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("pc_messages" as any)
+      .select("*")
+      .eq("room", room)
+      .order("created_at", { ascending: true })
+      .limit(200);
+
+    if (!error && data) {
+      setMessages(resolveReplies(data as unknown as PcMessage[]));
+    }
+  }, [room]);
+
+  // Initial fetch
   useEffect(() => {
     setLoading(true);
-    (async () => {
-      const { data, error } = await supabase
-        .from("pc_messages" as any)
-        .select("*")
-        .eq("room", room)
-        .order("created_at", { ascending: true })
-        .limit(200);
+    fetchMessages().finally(() => setLoading(false));
+  }, [fetchMessages]);
 
-      if (!error && data) {
-        const msgs = data as unknown as PcMessage[];
-        const resolved = msgs.map((m) => {
-          if (m.reply_to) {
-            const parent = msgs.find((p) => p.id === m.reply_to);
-            if (parent) {
-              return { ...m, reply_nickname: parent.nickname, reply_content: parent.content };
-            }
-          }
-          return m;
-        });
-        setMessages(resolved);
+  // Re-sync when page becomes visible (fixes mobile background desync)
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchMessages();
       }
-      setLoading(false);
-    })();
-  }, [room]);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [fetchMessages]);
 
   // Realtime subscription
   useEffect(() => {

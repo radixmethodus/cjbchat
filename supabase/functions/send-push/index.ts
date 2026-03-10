@@ -37,9 +37,10 @@ Deno.serve(async (req) => {
     }
 
     const body = content || (file_url ? "📷 Image" : "New message");
+    const truncatedBody = body.length > 100 ? body.slice(0, 100) + "…" : body;
     const payload = JSON.stringify({
-      title: `[R${room}] ${nickname} says...`,
-      body: body.length > 100 ? body.slice(0, 100) + "…" : body,
+      title: `[${room}] ${nickname} says:`,
+      body: truncatedBody,
       url: `/room/${room.toLowerCase()}`,
     });
 
