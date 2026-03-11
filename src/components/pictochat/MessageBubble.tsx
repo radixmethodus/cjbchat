@@ -28,6 +28,7 @@ type Props = {
   onToggleStar: (messageId: string) => void;
   activeSlider: string | null;
   onSliderOpen: (id: string | null) => void;
+  animate?: boolean;
 };
 
 const OBSCURE_PREFIX = "[OBSCURE]";
