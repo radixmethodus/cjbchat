@@ -190,10 +190,9 @@ export function usePushNotifications(nickname: string | null) {
       const reg = await getRegistrationWithRetry();
       const sub = await reg?.pushManager.getSubscription();
       if (sub) {
-        await supabase
-          .from("push_subscriptions" as any)
-          .delete()
-          .eq("endpoint", sub.endpoint);
+        await supabase.rpc("delete_push_subscription", {
+          _endpoint: sub.endpoint,
+        });
         await sub.unsubscribe();
       }
       setIsSubscribed(false);
