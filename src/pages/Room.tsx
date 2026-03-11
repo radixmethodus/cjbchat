@@ -141,7 +141,9 @@ const Room = () => {
 
     if (!initialScrollDone.current) {
       requestAnimationFrame(() => {
-        if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        requestAnimationFrame(() => {
+          if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        });
       });
       initialScrollDone.current = true;
       prevCountRef.current = messages.length;
