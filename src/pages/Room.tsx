@@ -95,6 +95,20 @@ const Room = () => {
   const { typingUsers, setTyping } = useTypingPresence(room, nickname);
   const { toggleStar, getStarCount, hasStarred } = useStars(room, nickname);
 
+  // Real DB count for header
+  const { data: totalCount } = useQuery({
+    queryKey: ["room-count", room],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("pc_messages")
+        .select("*", { count: "exact", head: true })
+        .eq("room", room);
+      return count || 0;
+    },
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+  });
+
   const prevCountRef = useRef(0);
 
   // Derive unique participants from messages
