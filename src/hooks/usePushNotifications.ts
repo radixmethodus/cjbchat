@@ -76,15 +76,17 @@ export function usePushNotifications(nickname: string | null) {
 
         const sub = await reg.pushManager.getSubscription();
         if (!cancelled && sub) {
-          const { data } = await supabase
-            .from("push_subscriptions" as any)
-            .select("notify_all, notify_mentions")
-            .eq("endpoint", sub.endpoint)
-            .maybeSingle();
+          const { data } = await supabase.rpc("get_push_subscription_prefs", {
+            _endpoint: sub.endpoint,
+          });
 
-          setIsSubscribed(true);
-          setNotifyAll((data as any)?.notify_all ?? true);
-          setNotifyMentions((data as any)?.notify_mentions ?? true);
+          if (data && data.length > 0) {
+            setIsSubscribed(true);
+            setNotifyAll(data[0].notify_all ?? true);
+            setNotifyMentions(data[0].notify_mentions ?? true);
+          } else {
+            setIsSubscribed(false);
+          }
         }
 
         if (!cancelled && !sub) {
