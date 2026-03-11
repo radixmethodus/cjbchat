@@ -22,4 +22,8 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    force: true,
+    include: ["react", "react-dom"],
+  },
 }));
