@@ -1,7 +1,7 @@
-import { forwardRef, useState, useRef, useCallback } from "react";
+import { forwardRef, useState, useCallback } from "react";
 import { format } from "date-fns";
 import ImageLightbox from "./ImageLightbox";
-import MessageActionDrawer from "./MessageActionSlider";
+import MessageActionSlider from "./MessageActionSlider";
 
 export type PcMessage = {
   id: string;
@@ -36,7 +36,7 @@ const MessageBubble = forwardRef<HTMLDivElement, Props>(
   ({ message, isOwn, showName, onReply, onReport, starCount, hasStarred, onToggleStar, activeSlider, onSliderOpen }, ref) => {
     const time = format(new Date(message.created_at), "h:mm a");
     const hasImage = message.file_url && message.file_type?.startsWith("image/");
-    const isDrawerOpen = activeSlider === message.id;
+    const isSliderOpen = activeSlider === message.id;
 
     const isObscure = message.content?.startsWith(OBSCURE_PREFIX);
     const [revealed, setRevealed] = useState(false);
@@ -44,34 +44,13 @@ const MessageBubble = forwardRef<HTMLDivElement, Props>(
       ? message.content.slice(OBSCURE_PREFIX.length)
       : message.content;
 
-    // Long-press detection for mobile
-    const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const handlePointerDown = useCallback(() => {
-      longPressTimer.current = setTimeout(() => {
-        onSliderOpen(message.id);
-      }, 400);
-    }, [message.id, onSliderOpen]);
-
-    const handlePointerUp = useCallback(() => {
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = null;
-      }
-    }, []);
-
-    const handlePointerLeave = useCallback(() => {
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = null;
-      }
-    }, []);
-
     const handleBubbleClick = useCallback(() => {
       if (isObscure && !revealed) {
         setRevealed(true);
+        return;
       }
-    }, [isObscure, revealed]);
+      onSliderOpen(isSliderOpen ? null : message.id);
+    }, [isObscure, revealed, isSliderOpen, message.id, onSliderOpen]);
 
     return (
       <div
@@ -95,26 +74,19 @@ const MessageBubble = forwardRef<HTMLDivElement, Props>(
           </div>
         )}
 
-        {/* Bubble */}
-        <div className="relative max-w-[80%]">
+        {/* Bubble + inline actions row */}
+        <div className={`flex items-start gap-1.5 max-w-[90%] ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
           <div
             onClick={handleBubbleClick}
-            onPointerDown={handlePointerDown}
-            onPointerUp={handlePointerUp}
-            onPointerLeave={handlePointerLeave}
             onContextMenu={(e) => e.preventDefault()}
-            className={`pc-bubble ${isOwn ? "pc-bubble-own" : ""} px-3 py-2 text-left select-none relative`}
-            title={isObscure && !revealed ? "Tap to reveal" : "Hold for actions"}
+            className={`pc-bubble ${isOwn ? "pc-bubble-own" : ""} px-3 py-2 text-left select-none relative cursor-pointer shrink`}
+            title={isObscure && !revealed ? "Tap to reveal" : "Tap for actions"}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                if (isObscure && !revealed) {
-                  setRevealed(true);
-                  return;
-                }
-                onSliderOpen(isDrawerOpen ? null : message.id);
+                handleBubbleClick();
               }
             }}
           >
@@ -134,6 +106,15 @@ const MessageBubble = forwardRef<HTMLDivElement, Props>(
             )}
             {hasImage && <ImageLightbox src={message.file_url!} />}
           </div>
+
+          <MessageActionSlider
+            isOpen={isSliderOpen}
+            onStar={() => { onToggleStar(message.id); onSliderOpen(null); }}
+            onReply={() => { onReply(message); onSliderOpen(null); }}
+            onReport={() => { onReport(message.nickname); onSliderOpen(null); }}
+            starCount={starCount}
+            hasStarred={hasStarred}
+          />
         </div>
 
         {/* Star count + Timestamp */}
@@ -151,19 +132,6 @@ const MessageBubble = forwardRef<HTMLDivElement, Props>(
             {time}
           </span>
         </div>
-
-        {/* Action Drawer */}
-        <MessageActionDrawer
-          isOpen={isDrawerOpen}
-          onClose={() => onSliderOpen(null)}
-          onStar={() => onToggleStar(message.id)}
-          onReply={() => onReply(message)}
-          onReport={() => onReport(message.nickname)}
-          starCount={starCount}
-          hasStarred={hasStarred}
-          messageNickname={message.nickname}
-          messagePreview={message.content?.slice(0, 60)}
-        />
       </div>
     );
   }
