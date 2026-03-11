@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useRoomMessages } from "@/hooks/useRoomMessages";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTypingPresence } from "@/hooks/useTypingPresence";
@@ -94,6 +95,20 @@ const Room = () => {
   const { typingUsers, setTyping } = useTypingPresence(room, nickname);
   const { toggleStar, getStarCount, hasStarred } = useStars(room, nickname);
 
+  // Real DB count for header
+  const { data: totalCount } = useQuery({
+    queryKey: ["room-count", room],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("pc_messages")
+        .select("*", { count: "exact", head: true })
+        .eq("room", room);
+      return count || 0;
+    },
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+  });
+
   const prevCountRef = useRef(0);
 
   // Derive unique participants from messages
@@ -125,7 +140,9 @@ const Room = () => {
     if (!el || messages.length === 0) return;
 
     if (!initialScrollDone.current) {
-      el.scrollTop = el.scrollHeight;
+      requestAnimationFrame(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      });
       initialScrollDone.current = true;
       prevCountRef.current = messages.length;
       return;
@@ -443,7 +460,7 @@ const Room = () => {
           </Popover>
 
           <span className="text-[8px] font-pixel text-pc-text-muted leading-none">
-            {messages.length} msgs
+            {totalCount ?? messages.length} msgs
           </span>
         </div>
       </div>

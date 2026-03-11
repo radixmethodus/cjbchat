@@ -1,38 +1,50 @@
 
 
-## Plan: Fix Message Count, Scroll-to-Bottom, and Send-Push Parity
+## Remove iOS Keyboard Accessory Bar via Capacitor Native Shell
 
-### Issues
+### Why this is needed
+The iOS form assistant bar (prev/next/done) **cannot be hidden** from a web app running in Safari or a PWA. This is an iOS platform limitation with no web API workaround. The only guaranteed solution is wrapping the app in a native shell (Capacitor) which gives access to native keyboard APIs that can suppress it.
 
-1. **Message count in Room header** (line 446): Shows `messages.length` which is only the loaded page (50 max). Should use the same `count: "exact"` approach as the lobby's `useRoomStats`.
+### Plan
 
-2. **Chat not starting at bottom**: The scroll logic at lines 122-144 uses `el.scrollTop = el.scrollHeight` but this fires inside a `useEffect` on `messages.length`. The issue is timing — when messages first load, the DOM may not have rendered all bubbles yet. Need a `requestAnimationFrame` or `setTimeout(0)` wrapper to ensure layout is complete before scrolling.
+#### 1. Add Capacitor dependencies
+Install `@capacitor/core`, `@capacitor/cli`, `@capacitor/ios`, `@capacitor/android`, and `@capacitor/keyboard`.
 
-3. **send-push format differs from expected**: Title should be `${nickname} in Room ${room}`, obscure messages should show `🔒 Secret message`, data should nest URL inside `data: { room, url }`, and sends should use `Promise.allSettled` for parallelism.
+#### 2. Configure Capacitor
+Initialize with:
+- `appId`: `app.lovable.82a942b92f8a443eade2428badf67432`
+- `appName`: `cjr`
+- `server.url`: sandbox preview URL for hot-reload during dev
+- `server.cleartext`: true
 
-4. **`optimizeDeps.force: true` in vite.config.ts**: This forces re-prebundling on every reload, which can cause stale chunk issues. Should be removed — `resolve.dedupe` is sufficient.
+#### 3. Use `@capacitor/keyboard` to hide accessory bar
+In `src/main.tsx`, add:
+```typescript
+import { Keyboard } from '@capacitor/keyboard';
+import { Capacitor } from '@capacitor/core';
 
-### Changes
+if (Capacitor.isNativePlatform()) {
+  Keyboard.setAccessoryBarVisible({ isVisible: false });
+}
+```
+This is the native API that **guarantees** the accessory bar is hidden.
 
-#### 1. Room.tsx — Fix message count display
-Replace `messages.length` on line 446 with a real DB count query. Add a simple `useQuery` inline or reuse `useRoomStats` for the current room's count.
+#### 4. No other code changes needed
+The existing `contentEditable` div, PWA config, and layout all remain as-is. The Capacitor wrapper is additive.
 
-#### 2. Room.tsx — Fix scroll-to-bottom timing
-Wrap the initial `el.scrollTop = el.scrollHeight` (line 128) in `requestAnimationFrame` to ensure DOM layout is complete before scrolling. This guarantees chat opens at the bottom.
+### What the user needs to do after
+1. Export project to GitHub via Settings
+2. `git pull` and `npm install`
+3. `npx cap init` (if not auto-created)
+4. `npx cap add ios`
+5. `npx cap update ios`
+6. `npm run build && npx cap sync`
+7. `npx cap run ios` (requires Mac + Xcode)
 
-#### 3. send-push/index.ts — Match expected notification format
-- Title: `${nickname} in Room ${room}`
-- If content starts with `[OBSCURE]`, body becomes `🔒 Secret message`  
-- Nest URL: `data: { room, url: \`/room/${room}\` }`
-- Use `Promise.allSettled` for parallel delivery instead of sequential `for...of`
-
-#### 4. vite.config.ts — Remove `force: true`
-Remove `optimizeDeps.force` to stop constant re-prebundling. Keep `resolve.dedupe` and `optimizeDeps.include`.
-
-### Files to modify
-| File | Change |
-|------|--------|
-| `src/pages/Room.tsx` | Fix msg count (use DB query), fix scroll timing (rAF) |
-| `supabase/functions/send-push/index.ts` | Title format, obscure handling, parallel sends |
-| `vite.config.ts` | Remove `optimizeDeps.force: true` |
+### Files changed
+| Action | File |
+|--------|------|
+| Edit | `src/main.tsx` (add Keyboard import + hide accessory bar) |
+| Install | `@capacitor/core`, `@capacitor/cli`, `@capacitor/ios`, `@capacitor/android`, `@capacitor/keyboard` |
+| Create | `capacitor.config.ts` (auto via `npx cap init`) |
 
