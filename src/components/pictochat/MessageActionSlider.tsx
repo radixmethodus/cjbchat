@@ -18,7 +18,7 @@ const MessageActionSlider = ({
   if (!isOpen) return null;
 
   return (
-    <div className="flex items-center gap-2 px-1 shrink-0 action-slider-enter">
+    <div className="flex items-center gap-2 px-2 py-1.5 shrink-0 action-slider-enter pc-bubble">
       <button
         onClick={onStar}
         className={`text-[11px] font-pixel underline hover:no-underline transition-colors ${

@@ -28,12 +28,13 @@ type Props = {
   onToggleStar: (messageId: string) => void;
   activeSlider: string | null;
   onSliderOpen: (id: string | null) => void;
+  animate?: boolean;
 };
 
 const OBSCURE_PREFIX = "[OBSCURE]";
 
 const MessageBubble = forwardRef<HTMLDivElement, Props>(
-  ({ message, isOwn, showName, onReply, onReport, starCount, hasStarred, onToggleStar, activeSlider, onSliderOpen }, ref) => {
+  ({ message, isOwn, showName, onReply, onReport, starCount, hasStarred, onToggleStar, activeSlider, onSliderOpen, animate = true }, ref) => {
     const time = format(new Date(message.created_at), "h:mm a");
     const hasImage = message.file_url && message.file_type?.startsWith("image/");
     const isSliderOpen = activeSlider === message.id;
@@ -55,7 +56,7 @@ const MessageBubble = forwardRef<HTMLDivElement, Props>(
     return (
       <div
         ref={ref}
-        className={`flex flex-col animate-slide-up ${showName ? "mt-3" : "mt-0.5"} ${isOwn ? "items-end" : "items-start"}`}
+        className={`flex flex-col ${animate ? "animate-slide-up" : ""} ${showName ? "mt-3" : "mt-0.5"} ${isOwn ? "items-end" : "items-start"}`}
       >
         {/* Reply preview */}
         {message.reply_nickname && (
