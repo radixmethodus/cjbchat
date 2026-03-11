@@ -469,7 +469,7 @@ const Room = () => {
 
       {/* Top screen - message list */}
       <div className="flex-1 min-h-0 ds-screen m-1 mb-0">
-        <div ref={scrollRef} className="h-full overflow-y-auto p-3 scroll-smooth" role="log" aria-live="polite" onScroll={handleScroll}>
+        <div ref={scrollRef} className="h-full overflow-y-auto p-3" role="log" aria-live="polite" onScroll={handleScroll}>
           {loadingMore && (
             <p className="text-center text-[9px] font-pixel text-pc-text-muted py-2">
               Loading older messages...
