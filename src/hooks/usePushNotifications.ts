@@ -213,10 +213,11 @@ export function usePushNotifications(nickname: string | null) {
         const reg = await getRegistrationWithRetry();
         const sub = await reg?.pushManager.getSubscription();
         if (sub) {
-          await supabase
-            .from("push_subscriptions" as any)
-            .update({ notify_all: all, notify_mentions: mentions } as any)
-            .eq("endpoint", sub.endpoint);
+          await supabase.rpc("update_push_prefs", {
+            _endpoint: sub.endpoint,
+            _notify_all: all,
+            _notify_mentions: mentions,
+          });
         }
       } catch {
         // ignore
