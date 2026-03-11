@@ -460,7 +460,7 @@ const Room = () => {
           </Popover>
 
           <span className="text-[8px] font-pixel text-pc-text-muted leading-none">
-            {messages.length} msgs
+            {totalCount ?? messages.length} msgs
           </span>
         </div>
       </div>

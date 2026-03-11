@@ -36,37 +36,55 @@ Deno.serve(async (req) => {
       });
     }
 
-    const body = content || (file_url ? "📷 Image" : "New message");
-    const truncatedBody = body.length > 100 ? body.slice(0, 100) + "…" : body;
+    // Determine body text
+    const isObscure = content?.startsWith("[OBSCURE]");
+    let body: string;
+    if (isObscure) {
+      body = "🔒 Secret message";
+    } else if (content) {
+      body = content.length > 100 ? content.slice(0, 100) + "…" : content;
+    } else if (file_url) {
+      body = "📷 Image";
+    } else {
+      body = "New message";
+    }
+
     const payload = JSON.stringify({
-      title: `[${room}] ${nickname} says:`,
-      body: truncatedBody,
-      url: `/room/${room.toLowerCase()}`,
+      title: `${nickname} in Room ${room}`,
+      body,
+      data: {
+        room,
+        url: `/room/${room}`,
+      },
     });
 
-    let sent = 0;
     const expired: string[] = [];
 
-    for (const sub of subs) {
-      // Check notification preferences
-      const isMentioned = content?.includes(`@${sub.nickname}`);
-      if (!sub.notify_all && !(sub.notify_mentions && isMentioned)) continue;
+    const results = await Promise.allSettled(
+      subs
+        .filter((sub) => {
+          const isMentioned = content?.includes(`@${sub.nickname}`);
+          return sub.notify_all || (sub.notify_mentions && isMentioned);
+        })
+        .map(async (sub) => {
+          try {
+            await webpush.sendNotification(
+              {
+                endpoint: sub.endpoint,
+                keys: { p256dh: sub.p256dh, auth: sub.auth_key },
+              },
+              payload,
+            );
+          } catch (err: any) {
+            if (err.statusCode === 404 || err.statusCode === 410) {
+              expired.push(sub.id);
+            }
+            throw err;
+          }
+        })
+    );
 
-      try {
-        await webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: { p256dh: sub.p256dh, auth: sub.auth_key },
-          },
-          payload,
-        );
-        sent++;
-      } catch (err: any) {
-        if (err.statusCode === 404 || err.statusCode === 410) {
-          expired.push(sub.id);
-        }
-      }
-    }
+    const sent = results.filter((r) => r.status === "fulfilled").length;
 
     // Clean up expired subscriptions
     if (expired.length > 0) {
