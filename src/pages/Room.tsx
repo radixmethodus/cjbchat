@@ -413,19 +413,21 @@ const Room = () => {
                 👥 <span className="text-[8px] leading-none">{participants.length}</span>
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-48 p-3 bg-pc-body/95 border-2 border-pc-border rounded-[2px] font-pixel shadow-lg">
-              <p className="text-[9px] font-pixel font-bold text-pc-blue mb-2">
-                Participants ({participants.length})
-              </p>
-              <div className="space-y-1.5 max-h-40 overflow-y-auto">
+            <PopoverContent className="w-52 p-0 bg-pc-body border-2 border-pc-border rounded-[2px] font-pixel shadow-xl">
+              <div className="px-3 py-2 border-b-2 border-pc-border">
+                <p className="text-[11px] font-pixel font-bold text-pc-blue">
+                  👥 Participants ({participants.length})
+                </p>
+              </div>
+              <div className="space-y-0.5 max-h-48 overflow-y-auto p-2">
                 {participants.map((p) => (
-                  <div key={p.name} className="flex items-center gap-2">
+                  <div key={p.name} className="flex items-center gap-2.5 px-2 py-1.5 hover:bg-pc-blue/5 rounded-sm">
                     <div
-                      className="w-2 h-2 shrink-0"
+                      className="w-3 h-3 shrink-0 rounded-sm"
                       style={{ backgroundColor: p.color === "disco" ? "hsl(var(--pc-blue))" : p.color }}
                     />
                     <span
-                      className="text-[9px] font-pixel font-bold truncate"
+                      className="text-[11px] font-pixel font-bold truncate"
                       style={{ color: p.color === "disco" ? "hsl(var(--pc-blue))" : p.color }}
                     >
                       {p.name}
@@ -434,7 +436,7 @@ const Room = () => {
                   </div>
                 ))}
                 {participants.length === 0 && (
-                  <span className="text-[8px] font-pixel text-pc-text-muted">No messages yet</span>
+                  <span className="text-[10px] font-pixel text-pc-text-muted px-2">No messages yet</span>
                 )}
               </div>
             </PopoverContent>
@@ -501,7 +503,13 @@ const Room = () => {
         {alerts.map((alert) => (
           <div
             key={alert.id}
-            className={`text-[9px] font-pixel ${alertColors[alert.type]} mb-1 animate-fade-in`}
+            className={`text-[10px] font-pixel font-bold ${alertColors[alert.type]} mb-1.5 animate-fade-in px-2 py-1.5 border-l-[3px] ${
+              alert.type === "error"
+                ? "border-destructive bg-destructive/10"
+                : alert.type === "success"
+                  ? "border-pc-blue bg-pc-blue/10"
+                  : "border-pc-blue bg-pc-blue/5"
+            }`}
           >
             {alert.type === "error" ? "✕ " : alert.type === "success" ? "✓ " : "ℹ "}
             {alert.text}

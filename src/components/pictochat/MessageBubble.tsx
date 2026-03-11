@@ -1,7 +1,7 @@
 import { forwardRef, useState, useRef, useCallback } from "react";
 import { format } from "date-fns";
 import ImageLightbox from "./ImageLightbox";
-import MessageActionSlider from "./MessageActionSlider";
+import MessageActionDrawer from "./MessageActionSlider";
 
 export type PcMessage = {
   id: string;
@@ -36,7 +36,7 @@ const MessageBubble = forwardRef<HTMLDivElement, Props>(
   ({ message, isOwn, showName, onReply, onReport, starCount, hasStarred, onToggleStar, activeSlider, onSliderOpen }, ref) => {
     const time = format(new Date(message.created_at), "h:mm a");
     const hasImage = message.file_url && message.file_type?.startsWith("image/");
-    const isSliderOpen = activeSlider === message.id;
+    const isDrawerOpen = activeSlider === message.id;
 
     const isObscure = message.content?.startsWith(OBSCURE_PREFIX);
     const [revealed, setRevealed] = useState(false);
@@ -46,7 +46,6 @@ const MessageBubble = forwardRef<HTMLDivElement, Props>(
 
     // Long-press detection for mobile
     const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const [isHovered, setIsHovered] = useState(false);
 
     const handlePointerDown = useCallback(() => {
       longPressTimer.current = setTimeout(() => {
@@ -96,42 +95,8 @@ const MessageBubble = forwardRef<HTMLDivElement, Props>(
           </div>
         )}
 
-        {/* Bubble + Slider container */}
-        <div
-          className="relative max-w-[80%]"
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
-          {/* Action affordance on hover (desktop) */}
-          {isHovered && !isSliderOpen && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onSliderOpen(message.id);
-              }}
-              className={`absolute top-1 z-10 w-5 h-5 flex items-center justify-center text-[10px] font-pixel text-pc-text-muted hover:text-pc-blue bg-pc-screen border border-pc-border transition-all ${
-                isOwn ? "right-full mr-0.5" : "left-full ml-0.5"
-              }`}
-              aria-label="Message actions"
-              title="Actions"
-            >
-              ⋯
-            </button>
-          )}
-
-          {/* Action Slider */}
-          <MessageActionSlider
-            isOwn={isOwn}
-            isOpen={isSliderOpen}
-            onClose={() => onSliderOpen(null)}
-            onStar={() => onToggleStar(message.id)}
-            onReply={() => onReply(message)}
-            onReport={() => onReport(message.nickname)}
-            starCount={starCount}
-            hasStarred={hasStarred}
-          />
-
-          {/* Bubble */}
+        {/* Bubble */}
+        <div className="relative max-w-[80%]">
           <div
             onClick={handleBubbleClick}
             onPointerDown={handlePointerDown}
@@ -149,7 +114,7 @@ const MessageBubble = forwardRef<HTMLDivElement, Props>(
                   setRevealed(true);
                   return;
                 }
-                onSliderOpen(isSliderOpen ? null : message.id);
+                onSliderOpen(isDrawerOpen ? null : message.id);
               }
             }}
           >
@@ -186,6 +151,19 @@ const MessageBubble = forwardRef<HTMLDivElement, Props>(
             {time}
           </span>
         </div>
+
+        {/* Action Drawer */}
+        <MessageActionDrawer
+          isOpen={isDrawerOpen}
+          onClose={() => onSliderOpen(null)}
+          onStar={() => onToggleStar(message.id)}
+          onReply={() => onReply(message)}
+          onReport={() => onReport(message.nickname)}
+          starCount={starCount}
+          hasStarred={hasStarred}
+          messageNickname={message.nickname}
+          messagePreview={message.content?.slice(0, 60)}
+        />
       </div>
     );
   }

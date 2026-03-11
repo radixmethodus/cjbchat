@@ -1,7 +1,11 @@
-import { useEffect, useRef } from "react";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 
 type Props = {
-  isOwn: boolean;
   isOpen: boolean;
   onClose: () => void;
   onStar: () => void;
@@ -9,10 +13,11 @@ type Props = {
   onReport: () => void;
   starCount: number;
   hasStarred: boolean;
+  messageNickname?: string;
+  messagePreview?: string;
 };
 
-const MessageActionSlider = ({
-  isOwn,
+const MessageActionDrawer = ({
   isOpen,
   onClose,
   onStar,
@@ -20,87 +25,68 @@ const MessageActionSlider = ({
   onReport,
   starCount,
   hasStarred,
+  messageNickname,
+  messagePreview,
 }: Props) => {
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  // Close on Escape
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [isOpen, onClose]);
-
-  // Close on click outside
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-    // Delay to avoid immediate close from the same click that opened it
-    const timer = setTimeout(() => {
-      window.addEventListener("click", handleClick, true);
-    }, 10);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("click", handleClick, true);
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
   const actions = [
     {
       label: hasStarred ? `Starred (${starCount})` : `Star${starCount > 0 ? ` (${starCount})` : ""}`,
       icon: hasStarred ? "⭐" : "☆",
       onClick: onStar,
-      className: hasStarred ? "text-yellow-400" : "text-pc-text",
+      accent: hasStarred,
     },
     {
       label: "Reply",
       icon: "↩",
       onClick: onReply,
-      className: "text-pc-text",
+      accent: false,
     },
     {
       label: "Report",
       icon: "⚠",
       onClick: onReport,
-      className: "text-destructive",
+      accent: false,
+      destructive: true,
     },
   ];
 
   return (
-    <div
-      ref={panelRef}
-      className={`absolute top-0 z-20 flex flex-col gap-0.5 py-1.5 px-1 bg-pc-screen border-2 border-pc-border shadow-lg action-slider-enter ${
-        isOwn ? "right-full mr-1" : "left-full ml-1"
-      }`}
-      style={{ minWidth: "72px" }}
-      role="menu"
-      aria-label="Message actions"
-    >
-      {actions.map((action) => (
-        <button
-          key={action.label}
-          onClick={(e) => {
-            e.stopPropagation();
-            action.onClick();
-            onClose();
-          }}
-          className={`flex items-center gap-1.5 px-2 py-1.5 text-[9px] font-pixel font-bold rounded-none hover:bg-pc-blue/20 active:scale-95 transition-all ${action.className}`}
-          role="menuitem"
-        >
-          <span className="text-[11px]">{action.icon}</span>
-          {action.label}
-        </button>
-      ))}
-    </div>
+    <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DrawerContent className="bg-pc-body border-t-2 border-pc-border rounded-t-lg max-h-[40vh]">
+        <DrawerHeader className="pb-1 pt-2 px-4">
+          <DrawerTitle className="text-[11px] font-pixel font-bold text-pc-blue text-center">
+            {messageNickname && (
+              <span className="block text-pc-text-muted text-[9px] font-normal mb-0.5 truncate max-w-[80%] mx-auto">
+                {messageNickname}: {messagePreview || "…"}
+              </span>
+            )}
+            Message Actions
+          </DrawerTitle>
+        </DrawerHeader>
+        <div className="flex flex-col gap-1 px-4 pb-4 pt-1">
+          {actions.map((action) => (
+            <button
+              key={action.label}
+              onClick={() => {
+                action.onClick();
+                onClose();
+              }}
+              className={`flex items-center gap-3 px-4 py-3 text-[12px] font-pixel font-bold rounded-sm transition-all active:scale-[0.98] ${
+                action.destructive
+                  ? "text-destructive hover:bg-destructive/10"
+                  : action.accent
+                    ? "text-yellow-400 hover:bg-yellow-400/10"
+                    : "text-pc-text hover:bg-pc-blue/10"
+              }`}
+            >
+              <span className="text-[16px]">{action.icon}</span>
+              {action.label}
+            </button>
+          ))}
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 };
 
-export default MessageActionSlider;
+export default MessageActionDrawer;

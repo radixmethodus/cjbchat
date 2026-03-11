@@ -53,8 +53,8 @@ self.addEventListener("push", (e) => {
         body: data.body || "New message",
         icon: "/favicon.ico",
         badge: "/favicon.ico",
-        data: data.data || {},
-        tag: `room-${data.data?.room || "A"}`,
+        data: { url: data.url || "/" },
+        tag: `room-${data.url || "A"}`,
         renotify: true,
       })
     );
