@@ -506,6 +506,7 @@ const Room = () => {
                   onToggleStar={toggleStar}
                   activeSlider={activeSlider}
                   onSliderOpen={setActiveSlider}
+                  animate={initialScrollDone.current}
                 />
               );
             })

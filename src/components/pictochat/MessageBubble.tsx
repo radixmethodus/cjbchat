@@ -56,7 +56,7 @@ const MessageBubble = forwardRef<HTMLDivElement, Props>(
     return (
       <div
         ref={ref}
-        className={`flex flex-col animate-slide-up ${showName ? "mt-3" : "mt-0.5"} ${isOwn ? "items-end" : "items-start"}`}
+        className={`flex flex-col ${animate ? "animate-slide-up" : ""} ${showName ? "mt-3" : "mt-0.5"} ${isOwn ? "items-end" : "items-start"}`}
       >
         {/* Reply preview */}
         {message.reply_nickname && (
