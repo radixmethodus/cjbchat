@@ -34,7 +34,7 @@ type Props = {
 const OBSCURE_PREFIX = "[OBSCURE]";
 
 const MessageBubble = forwardRef<HTMLDivElement, Props>(
-  ({ message, isOwn, showName, onReply, onReport, starCount, hasStarred, onToggleStar, activeSlider, onSliderOpen }, ref) => {
+  ({ message, isOwn, showName, onReply, onReport, starCount, hasStarred, onToggleStar, activeSlider, onSliderOpen, animate = true }, ref) => {
     const time = format(new Date(message.created_at), "h:mm a");
     const hasImage = message.file_url && message.file_type?.startsWith("image/");
     const isSliderOpen = activeSlider === message.id;
