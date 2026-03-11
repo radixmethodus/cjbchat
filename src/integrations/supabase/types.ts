@@ -329,6 +329,17 @@ export type Database = {
             }
             Returns: undefined
           }
+      delete_push_subscription: {
+        Args: { _endpoint: string }
+        Returns: undefined
+      }
+      get_push_subscription_prefs: {
+        Args: { _endpoint: string }
+        Returns: {
+          notify_all: boolean
+          notify_mentions: boolean
+        }[]
+      }
       get_vapid_public_key: { Args: never; Returns: string }
       pin_message: {
         Args: {
@@ -336,6 +347,14 @@ export type Database = {
           _pin: string
           _table?: string
           _user_id: string
+        }
+        Returns: undefined
+      }
+      update_push_prefs: {
+        Args: {
+          _endpoint: string
+          _notify_all: boolean
+          _notify_mentions: boolean
         }
         Returns: undefined
       }

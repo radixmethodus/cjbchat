@@ -76,15 +76,17 @@ export function usePushNotifications(nickname: string | null) {
 
         const sub = await reg.pushManager.getSubscription();
         if (!cancelled && sub) {
-          const { data } = await supabase
-            .from("push_subscriptions" as any)
-            .select("notify_all, notify_mentions")
-            .eq("endpoint", sub.endpoint)
-            .maybeSingle();
+          const { data } = await supabase.rpc("get_push_subscription_prefs", {
+            _endpoint: sub.endpoint,
+          });
 
-          setIsSubscribed(true);
-          setNotifyAll((data as any)?.notify_all ?? true);
-          setNotifyMentions((data as any)?.notify_mentions ?? true);
+          if (data && data.length > 0) {
+            setIsSubscribed(true);
+            setNotifyAll(data[0].notify_all ?? true);
+            setNotifyMentions(data[0].notify_mentions ?? true);
+          } else {
+            setIsSubscribed(false);
+          }
         }
 
         if (!cancelled && !sub) {
@@ -188,10 +190,9 @@ export function usePushNotifications(nickname: string | null) {
       const reg = await getRegistrationWithRetry();
       const sub = await reg?.pushManager.getSubscription();
       if (sub) {
-        await supabase
-          .from("push_subscriptions" as any)
-          .delete()
-          .eq("endpoint", sub.endpoint);
+        await supabase.rpc("delete_push_subscription", {
+          _endpoint: sub.endpoint,
+        });
         await sub.unsubscribe();
       }
       setIsSubscribed(false);
@@ -212,10 +213,11 @@ export function usePushNotifications(nickname: string | null) {
         const reg = await getRegistrationWithRetry();
         const sub = await reg?.pushManager.getSubscription();
         if (sub) {
-          await supabase
-            .from("push_subscriptions" as any)
-            .update({ notify_all: all, notify_mentions: mentions } as any)
-            .eq("endpoint", sub.endpoint);
+          await supabase.rpc("update_push_prefs", {
+            _endpoint: sub.endpoint,
+            _notify_all: all,
+            _notify_mentions: mentions,
+          });
         }
       } catch {
         // ignore
