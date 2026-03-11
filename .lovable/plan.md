@@ -1,50 +1,31 @@
 
 
-## Remove iOS Keyboard Accessory Bar via Capacitor Native Shell
+## Plan: Message Action Drawers, Notification Cleanup, and Menu Visibility
 
-### Why this is needed
-The iOS form assistant bar (prev/next/done) **cannot be hidden** from a web app running in Safari or a PWA. This is an iOS platform limitation with no web API workaround. The only guaranteed solution is wrapping the app in a native shell (Capacitor) which gives access to native keyboard APIs that can suppress it.
+### 1. Convert Message Context Menus to Bottom Drawers
 
-### Plan
+Replace the current `MessageActionSlider` (an absolute-positioned panel that appears beside the message) with a **Drawer** (bottom sheet) using the existing `vaul` Drawer component. This is more natural on mobile and avoids clipping/overflow issues.
 
-#### 1. Add Capacitor dependencies
-Install `@capacitor/core`, `@capacitor/cli`, `@capacitor/ios`, `@capacitor/android`, and `@capacitor/keyboard`.
+**Changes:**
+- **`src/components/pictochat/MessageActionSlider.tsx`** — Rewrite to use `<Drawer>` from `@/components/ui/drawer`. It will be a controlled bottom sheet with Star, Reply, and Report buttons styled in the PictoChat pixel aesthetic. The drawer will show which message it applies to (nickname + preview).
+- **`src/components/pictochat/MessageBubble.tsx`** — Remove the hover "⋯" button and the absolute-positioned slider. Instead, long-press / click opens the drawer. Pass the message content/nickname to the drawer for context.
 
-#### 2. Configure Capacitor
-Initialize with:
-- `appId`: `app.lovable.82a942b92f8a443eade2428badf67432`
-- `appName`: `cjr`
-- `server.url`: sandbox preview URL for hot-reload during dev
-- `server.cleartext`: true
+### 2. Notification Text Cleanup
 
-#### 3. Use `@capacitor/keyboard` to hide accessory bar
-In `src/main.tsx`, add:
-```typescript
-import { Keyboard } from '@capacitor/keyboard';
-import { Capacitor } from '@capacitor/core';
+The push notification payload in `send-push/index.ts` currently uses:
+- `title: "[${room}] ${nickname} says:"`
+- `body: truncatedBody` (the message content)
 
-if (Capacitor.isNativePlatform()) {
-  Keyboard.setAccessoryBarVisible({ isVisible: false });
-}
-```
-This is the native API that **guarantees** the accessory bar is hidden.
+There is no "from chat" text present, so this is already correct. However, the service worker's push handler doesn't pass `data.url` correctly — the edge function sets `url` at the top level of the payload but the SW reads `data.data?.url`. Will fix this inconsistency so notification clicks navigate properly.
 
-#### 4. No other code changes needed
-The existing `contentEditable` div, PWA config, and layout all remain as-is. The Capacitor wrapper is additive.
+### 3. Improve Alert and Participants Menu Visibility
 
-### What the user needs to do after
-1. Export project to GitHub via Settings
-2. `git pull` and `npm install`
-3. `npx cap init` (if not auto-created)
-4. `npx cap add ios`
-5. `npx cap update ios`
-6. `npm run build && npx cap sync`
-7. `npx cap run ios` (requires Mac + Xcode)
+- **Inline alerts**: Increase font size from 9px to 10px, add a subtle background highlight and left border (matching alert type color) so they stand out from the chat area.
+- **Participants popover**: Increase contrast — use a solid `bg-pc-body` background (no transparency), bump font sizes, add a visible header divider, and increase the color dot size for better readability.
 
-### Files changed
-| Action | File |
-|--------|------|
-| Edit | `src/main.tsx` (add Keyboard import + hide accessory bar) |
-| Install | `@capacitor/core`, `@capacitor/cli`, `@capacitor/ios`, `@capacitor/android`, `@capacitor/keyboard` |
-| Create | `capacitor.config.ts` (auto via `npx cap init`) |
+### Files to modify:
+1. `src/components/pictochat/MessageActionSlider.tsx` — Full rewrite to Drawer
+2. `src/components/pictochat/MessageBubble.tsx` — Remove hover button, simplify trigger logic
+3. `src/pages/Room.tsx` — Update alert styling, participants popover styling
+4. `public/sw.js` — Fix push data.url path
 
