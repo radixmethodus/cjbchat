@@ -501,7 +501,13 @@ const Room = () => {
         {alerts.map((alert) => (
           <div
             key={alert.id}
-            className={`text-[9px] font-pixel ${alertColors[alert.type]} mb-1 animate-fade-in`}
+            className={`text-[10px] font-pixel font-bold ${alertColors[alert.type]} mb-1.5 animate-fade-in px-2 py-1.5 border-l-[3px] ${
+              alert.type === "error"
+                ? "border-destructive bg-destructive/10"
+                : alert.type === "success"
+                  ? "border-pc-blue bg-pc-blue/10"
+                  : "border-pc-blue bg-pc-blue/5"
+            }`}
           >
             {alert.type === "error" ? "✕ " : alert.type === "success" ? "✓ " : "ℹ "}
             {alert.text}
